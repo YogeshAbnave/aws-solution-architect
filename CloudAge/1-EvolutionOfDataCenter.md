@@ -635,6 +635,247 @@ Data Center & Enterprise Storage Overview
 ---
 
 
+### **Question 1**
+
+**How would you distinguish between AI and automation?**
+a) AI is single-task, and automation is multi-task.
+b) AI is multi-task, and automation is single-task. ✅
+c) AI and automation are the same.
+d) AI is for software, and automation is for hardware.
+
+---
+
+### **Question 2**
+
+**In IT, what guarantees data success with a larger data size, such as 11/9?**
+a) Larger algorithms
+b) More engineers
+c) More sample data ✅
+d) Quantum computing
+
+---
+
+### **Question 3**
+
+**In the context of IT roles, what does a Chief Technology Officer (CTO) indicate about an organization?**
+a) Non-IT Company
+b) Strong emphasis on marketing
+c) High investment in technology ✅
+d) Limited use of technology
+
+---
+
+### **Question 4**
+
+**In the DataCenter, what is the focus when it comes to pricing?**
+a) Fixed contracts
+b) Pay-as-you-go model ✅
+c) Long-term commitments
+d) Monthly subscriptions
+
+---
+
+### **Question 5**
+
+**In the world of AI, what is used instead of writing scripts?**
+a) Scripts
+b) Algorithms ✅
+c) Codes
+d) Programs
+
+---
+
+### **Question 6**
+
+**What are the five pillars of architecture that a Data Architect works on?**
+a) Performance, Speed, Cost, Reliability, Security
+b) Operational Excellence, Performance Optimization, Cost Optimization, Reliability, Security, Sustainability ✅
+c) Design, Implementation, Management, Security, Quality
+d) Data Storage, Data Processing, Data Analysis, Data Security, Data Accessibility
+
+---
+
+### **Question 7**
+
+**What aspect of IT is copy and paste commonly used for?**
+a) Software development
+b) Hardware configuration
+c) Data security
+d) DataCenter management ✅
+
+---
+
+### **Question 8**
+
+**What do we NOT need to worry about in the DataCenter?**
+a) Upgrades
+b) Update
+c) OEM
+d) Sample data ✅
+
+---
+
+### **Question 9**
+
+**What does CMO stand for in an organization?**
+a) Chief Management Officer
+b) Chief Marketing Officer ✅
+c) Central Management Officer
+d) Chief Maintenance Officer
+
+---
+
+### **Question 10**
+
+**What does SLA stand for in the context of application development?**
+a) Service Level Agreement ✅
+b) System Life Cycle Assessment
+c) Software Load Analysis
+d) Service Level Adjustment
+
+---
+
+### **Question 11**
+
+**What does the term "Pay As You Go" model mean in the DataCenter?**
+a) Pay only for used hardware
+b) Pay for services consumed without long-term contracts ✅
+c) Pay upfront for the entire project
+d) Pay for software updates
+
+---
+
+### **Question 12**
+
+**What does VPN stand for?**
+a) Virtual Private Network ✅
+b) Very Private Network
+c) Visual Processing Node
+d) Virtual Processing Network
+
+---
+
+### **Question 13**
+
+**What is a Jar commonly known as in Java?**
+a) Java Archive ✅
+b) Java Application
+c) Java Runtime
+d) Java Resource
+
+---
+
+### **Question 14**
+
+**What is the accuracy of an algorithm if the sample data is 30%, and the accuracy is 50%?**
+a) 15% ✅
+b) 30%
+c) 50%
+d) 60%
+
+---
+
+### **Question 15**
+
+**What is the potential drawback of quantum technology?**
+a) Immediate stabilization
+b) High stability
+c) Quick adoption
+d) Time to stabilize, possibly 20 years ✅
+
+---
+
+### **Question 16**
+
+**What is the primary purpose of an administrator for organization workstations?**
+a) System updates
+b) Security ✅
+c) Performance optimization
+d) Software installation
+
+---
+
+### **Question 17**
+
+**What is the role of a Scrum Master in the application development process?**
+a) Code writing
+b) Hardware implementation
+c) Quality checking
+d) Agile project management ✅
+
+---
+
+### **Question 18**
+
+**What is the term used to describe a computer that accesses resources from a datacenter?**
+a) Virtual Machine
+b) Desktop
+c) PC
+d) Client ✅
+
+---
+
+### **Question 19**
+
+**What term is used for services in which everything is managed?**
+a) Managed Services
+b) Fully Managed Services ✅
+c) DataCenter Services
+d) Automated Services
+
+---
+
+### **Question 20**
+
+**Which cloud service provides a Desktop as a Service (DaaS) solution in the DataCenter?**
+a) Azure
+b) AWS
+c) Google Cloud
+d) All of the above ✅
+
+---
+
+### **Question 21**
+
+**Which of the following is NOT a brand of organization workstations?**
+a) Dell
+b) HP
+c) Lenovo
+d) AWS ✅
+
+---
+
+### **Question 22**
+
+**Who provides insights into the success or failure of technologies?**
+a) Engineers
+b) Business media like Gartner and Forrester ✅
+c) CEOs
+d) Data architects
+
+---
+
+### **Question 23**
+
+**Why do organizations give work to different companies?**
+a) To increase competition
+b) To hide business logic
+c) To reduce costs ✅
+d) To share responsibilities
+
+---
+
+### **Question 24**
+
+**Why is Active Directory (AD) used in organizations?**
+a) File storage
+b) Network speed optimization
+c) Authentication ✅
+d) Software development
+
+---
+
+
 
 
 
