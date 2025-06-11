@@ -719,4 +719,3 @@ Why is the selection of enterprise-grade products preferred over open source?
 - Open source has a 36% failure rate.
 
 ---
-![alt text](download.png)
