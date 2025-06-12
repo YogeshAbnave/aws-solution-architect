@@ -273,10 +273,6 @@ ssh -i "C:\path\to\your-key.pem" ubuntu@<Public-IP>
 **Need help with screenshots or automation? Let me know! 🚀**
 
 ```
-
----
-
-Would you like me to generate a downloadable `.md` file? Let me know! 📄
 ```
 
 
