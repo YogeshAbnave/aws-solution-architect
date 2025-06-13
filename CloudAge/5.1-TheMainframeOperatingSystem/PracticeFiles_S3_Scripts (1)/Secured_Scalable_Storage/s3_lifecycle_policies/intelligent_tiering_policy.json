@@ -1,0 +1,26 @@
+{
+  "Rules": [
+    {
+      "ID": "TransitionToIntelligentTiering",
+      "Status": "Enabled",
+      "Filter": {
+        "Prefix": "Replace-Me-With-Prefix/"
+      },
+      "Transitions": [
+        {
+          "Days": 30,
+          "StorageClass": "INTELLIGENT_TIERING"
+        }
+      ],
+      "Expiration": {
+        "Days": 90
+      },
+      "NoncurrentVersionExpiration": {
+        "NoncurrentDays": 90
+      },
+      "AbortIncompleteMultipartUpload": {
+        "DaysAfterInitiation": 7
+      }
+    }
+  ]
+}

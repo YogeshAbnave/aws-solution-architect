@@ -1,0 +1,86 @@
+step-by-step guide to CRR 
+
+Create Source and Destination S3 Buckets
+
+Navigate to the Amazon S3 console (https://console.aws.amazon.com/s3/ )
+
+Create two buckets: one for the source and one for the destination
+Ensure both buckets are in different regions
+Enable versioning for both buckets:
+a. Select each bucket
+b. Go to the "Properties" tab 
+c. Find the "Bucket Versioning" section and click "Edit" [2]
+d. Choose "Enable" and save changes
+
+
+Set Up IAM Role for Replication
+
+Go to the IAM console (https://console.aws.amazon.com/iam/ )
+Create a new role with the necessary permissions for S3 replication
+Attach the AWS managed policy "AmazonS3FullAccess"
+(Note: In a production environment, you should create a custom policy with more restricted permissions)
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetReplicationConfiguration",
+                "s3:ListBucket"
+            ],
+            "Resource": [
+                "arn:aws:s3:::source-bucket-REPLACE-ME"
+            ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetObjectVersionForReplication",
+                "s3:GetObjectVersionAcl",
+                "s3:GetObjectVersionTagging"
+            ],
+            "Resource": [
+                "arn:aws:s3:::source-bucket-REPLACE-ME/*"
+            ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:ReplicateObject",
+                "s3:ReplicateDelete",
+                "s3:ReplicateTags"
+            ],
+            "Resource": "arn:aws:s3:::destination-bucket-REPLACE-ME/*"
+        }
+    ]
+}
+
+Configure Cross-Region Replication
+
+Return to the S3 console and select your source bucket
+Go to the "Management" tab and find "Replication rules"
+Click "Create replication rule"
+Provide a rule name (e.g., "CRRRule")
+Choose the scope of the rule (entire bucket, specific prefix, or objects with specific tags)
+Select the destination bucket in the other region
+Choose the IAM role you created earlier
+Configure additional options as needed (e.g., storage class, encryption)
+Review and create the rule
+Verify Replication Configuration [3]
+
+Upload a test object to your source bucket
+Check the destination bucket to confirm the object is replicated
+Review the replication status in the source bucket's "Replication" tab
+Enable Replication for Specific Scenarios
+
+For encrypted files: Ensure you've configured the appropriate KMS keys and permissions
+For specific folders: Use prefix filtering in your replication rule
+For specific tags: Use tag-based filtering in your replication rule
+Monitor Replication
+
+Set up Amazon S3 Inventory to track replication status
+Use Amazon CloudWatch metrics to monitor replication performance
+By completing these steps, you've successfully set up Cross-Region Replication for your S3 buckets. This configuration allows for automatic replication of objects based on your specified rules, enhancing data redundancy and availability across different AWS Regions.
+
+Remember to regularly review and update your replication configuration to ensure it meets your evolving business needs and security requirements. Always test any changes in a non-production environment before applying them to your live systems.
+

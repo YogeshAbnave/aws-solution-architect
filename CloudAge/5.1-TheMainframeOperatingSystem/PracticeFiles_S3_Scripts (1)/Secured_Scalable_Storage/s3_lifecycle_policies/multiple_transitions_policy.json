@@ -1,0 +1,30 @@
+{
+  "Rules": [
+    {
+      "ID": "MultipleTransitions",
+      "Status": "Enabled",
+      "Filter": {
+        "Prefix": "Replace-Me-With-Prefix/"
+      },
+      "Transitions": [
+        {
+          "Days": 30,
+          "StorageClass": "STANDARD_IA"
+        },
+        {
+          "Days": 60,
+          "StorageClass": "GLACIER"
+        }
+      ],
+      "Expiration": {
+        "Days": 90
+      },
+      "NoncurrentVersionExpiration": {
+        "NoncurrentDays": 90
+      },
+      "AbortIncompleteMultipartUpload": {
+        "DaysAfterInitiation": 7
+      }
+    }
+  ]
+}
