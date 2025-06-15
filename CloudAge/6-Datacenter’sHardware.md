@@ -1,6 +1,5 @@
-
-
 ## Computer Booting Sequence & Motherboard Working (Descriptive Tree Structure)
+---
 
 ```mermaid
 graph TD
