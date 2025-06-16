@@ -1,0 +1,80 @@
+
+..........mysql installation_Sqoop.txt
+
+
+sudo apt-get install mysql-server mysql-client -y   sudo mysql_secure_installation
+
+Enter Password hadoop and Confirm Password hadoop
+
+service mysql status
+
+mysqladmin -u root -p version
+
+mysqladmin -u root -p status
+
+mysql -u root -p
+
+mysql> show databases;
+mysql> CREATE DATABASE jinga_db;
+mysql> GRANT ALL PRIVILEGES ON jinga_db.* TO 'root'@'localhost';
+mysql> show databases;
+mysql> USE jinga_db;
+mysql> show tables;
+mysql> CREATE TABLE user_data(first_name VARCHAR(50) NOT NULL,
+  company_name VARCHAR(100),
+  address VARCHAR(100),
+ country VARCHAR(50),
+ city VARCHAR(50),
+ state VARCHAR(50));
+
+mysql> desc user_data;
+ 
+exit;
+
+Wget https://mycloudage.s3.ap-south-1.amazonaws.com/userdata.txt
+
+sudo cp userdata.txt /var/lib/mysql/jinga_db/
+
+
+mysql -u root -p
+mysql> USE jinga_db;
+mysql> LOAD DATA INFILE 'userdata.txt' INTO TABLE user_data FIELDS TERMINATED BY ',' ;
+mysql> SHOW VARIABLES LIKE 'secure_file_priv';  
+exit;
+sudo nano /etc/mysql/mysql.conf.d/mysqld.cnf   secure_file_priv = ""
+sudo service mysql restart
+sudo mysql -u root -pYourStrongPassword
+USE jinga_db;
+set sql_mode='';
+mysql> LOAD DATA INFILE 'userdata.txt' INTO TABLE user_data FIELDS TERMINATED BY ',';
+mysql> SELECT COUNT(*) FROM user_data;
+mysql> select * from user_data limit 10;
+mysql> quit;
+
+
+wget https://s3.amazonaws.com/cloud-age/Sample-SQL-File-10000-Rows.sql
+
+mysql -u root -p jinga_db < Sample-SQL-File-10000-Rows.sql
+mysql -u root -p
+mysql> show databases;
+mysql> use jinga_db;
+mysql> show tables;
+mysql> desc user_details;
+mysql> select * from user_details limit 100;
+mysql> exit;
+
+Back up mysql database:
+
+mysqldump -u root -p --all-databases; > mysql_01-04-2025.sql
+
+restore exising database
+[root@CloudAge~]# mysql -u root -p < mysql_01-04-2025.sql
+
+//for back up restore.
+
+
+To uninstall mysql from ubuntu  sudo systemctl stop mysql or sudo /etc/init.d/mysql stop
+ sudo apt-get purge mysql-server mysql-client mysql-common mysql-server-core-* mysql-client-core-*
+ sudo rm -rf /etc/mysql /var/lib/mysql
+sudo apt autoclean
+sudo apt autoremove

@@ -1,0 +1,25 @@
+-------------**Apache Pig Installation**------------------
+
+wget https://archive.apache.org/dist/pig/pig-0.16.0/pig-0.16.0.tar.gz  wget https://dlcdn.apache.org/pig/pig-0.16.0/pig-0.16.0.tar.gz 
+
+tar -zxvf pig-0.16.0.tar.gz
+
+sudo mv pig-0.16.0 /usr/local/pig
+
+export PIG_HOME=/usr/local/pig/
+export PATH=$PATH:$PIG_HOME/bin
+
+pig
+
+lines = LOAD '/user/hive/warehouse/server.db/doc/serverlog.log' AS (line:chararray);
+/ user/hive/warehouse/server.db/doc/serverlog.log
+
+words = FOREACH lines GENERATE FLATTEN(TOKENIZE(line)) as word;
+
+grouped = GROUP words BY word;
+
+wordcount = FOREACH grouped GENERATE group, COUNT(words);
+
+DUMP wordcount
+
+

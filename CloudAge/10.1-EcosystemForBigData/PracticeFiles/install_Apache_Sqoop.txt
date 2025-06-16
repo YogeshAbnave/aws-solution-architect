@@ -1,0 +1,37 @@
+APACHE SQOOP
+
+wget http://archive.apache.org/dist/sqoop/1.4.4/sqoop-1.4.4.bin__hadoop-1.0.0.tar.gz
+
+tar -zxvf sqoop-1.4.4.bin__hadoop-1.0.0.tar.gz
+
+sudo mv sqoop-1.4.4.bin__hadoop-1.0.0 /usr/local/sqoop/
+
+nano ~/.bashrc
+
+export SQOOP_PREFIX="/usr/local/sqoop/"
+export SQOOP_CONF_DIR="$SQOOP_PREFIX/conf"
+export SQOOP_CLASSPATH="$SQOOP_CONF_DIR"
+export PATH="$SQOOP_PREFIX/bin:$PATH"
+
+echo $HADOOP_COMMON_HOME
+exec bash
+
+cd $SQOOP_PREFIX/conf
+mv sqoop-env-template.sh sqoop-env.sh
+nano sqoop-env.sh
+export HADOOP_COMMON_HOME=/usr/local/hadoop/ 
+export HADOOP_MAPRED_HOME=/usr/local/hadoop/
+export ZOOKEPER_HOME=$ZOOKEEPER_HOME
+export HBASE_HOME=$HBASE_HOME
+export HIVE_HOME=$HIVE_HOME
+
+
+wget https://dev.mysql.com/get/Downloads/Connector-J/mysql-connector-j-9.0.0.tar.gz
+tar -zxf mysql-connector-j-9.0.0.tar.gz
+cp mysql-connector-j-9.0.0/mysql-connector-j-9.0.0.jar /usr/local/sqoop/lib/
+cd $SQOOP_PREFIX/bin
+
+sqoop-version
+
+ sqoop-import --connect jdbc:mysql://localhost/jinga_db --username root -PYourStrongPassword --table user_details -m 1 --target-dir /user/ubuntu/tables/userdata
+ sqoop-import --connect jdbc:mysql://localhost/jinga_db --username root -P --table user_details -m 1 --target-dir /tables/userdetails   

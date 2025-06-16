@@ -1,0 +1,95 @@
+
+
+.......Apache Hive Installation
+
+wget https://archive.apache.org/dist/hive/hive-1.2.2/apache-hive-1.2.2-bin.tar.gz
+
+tar -zxf apache-hive-1.2.2-bin.tar.gz
+
+sudo mv apache-hive-1.2.2-bin /usr/local/hive
+
+nano .bashrc
+
+export HIVE_HOME=/usr/local/hive
+export PATH=$PATH:$HIVE_HOME/bin
+
+exec bash
+
+cd $HIVE_HOME/conf
+
+cp hive-env.sh.template hive-env.sh
+
+nano $HIVE_HOME/conf/hive-env.sh
+
+export HADOOP_HOME=/usr/local/hadoop
+
+hive
+
+hadoop fs -chmod -R 777 /tmp
+
+hive
+
+-------------**Loading Server Log Data in hive**--------------
+exit;/ control c
+
+ this file is in the packaged folder generate_logs.py
+edit and 
+hadoop fs -rmr /user/ubuntu/*
+
+hadoop fs -copyFromLocal /home/ubuntu/eventlog.log /user/ubuntu/serverlog.log
+
+hadoop fs -ls /user/ubuntu/
+
+hive
+
+Create database server;
+
+Show databases;
+
+Use server;  create table server (time STRING, ip STRING, country STRING, status STRING)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '|' LOCATION '/user/ubuntu/';
+
+-- Query to select all records, limited to 10
+SELECT * FROM serverdata LIMIT 10;
+
+-- Query to select records where country is 'IN', limited to 5
+SELECT * FROM server WHERE country = 'IN' LIMIT 5;
+
+
+
+create table serverlogs (time STRING, ip STRING, country STRING, status STRING)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '|' LOCATION '/user/ubuntu/';
+
+select * from serverdata limit 10;
+select * from serverlogs limit 10;
+select * from serverdata limit 10;
+
+SELECT * FROM serverdata where country = "IN" LIMIT 5;
+
+select * from serverdata where country = "GB" ;
+
+select * from serverdata where country = "IN" AND status = "ERROR";
+
+select * from serverdata where country = "FR" AND status = "SUCCESS";
+
+SELECT ip, time FROM Serverdata;
+
+SELECT DISTINCT ip, time from server;
+
+
+SELECT DISTINCT ip from serverdata;
+SELECT DISTINCT * FROM serverdata;
+
+create table doc(text string) row format delimited fields terminated by '\n' stored as textfile;
+
+load data inpath '/user/ubuntu/*' overwrite into table doc;
+
+SELECT word, COUNT(*) FROM doc LATERAL VIEW explode(split(text, ' ')) lTable as
+word GROUP BY word;
+
+
+
+exit;
+
+
+
