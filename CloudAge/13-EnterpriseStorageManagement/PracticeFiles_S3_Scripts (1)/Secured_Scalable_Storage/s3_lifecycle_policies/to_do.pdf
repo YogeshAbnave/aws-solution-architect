@@ -1,0 +1,18 @@
+# AWS S3 Lifecycle Policy Creation for HDFS Bucket
+
+## Tasks
+- [x] Gather requirements for S3 lifecycle policy
+- [x] Research AWS S3 lifecycle policy best practices for HIPAA compliance
+- [x] Create lifecycle policy JSON documents for different scenarios
+- [x] Validate lifecycle policy documents
+- [x] Provide implementation instructions
+- [ ] Deliver final policy documents to user
+
+## Requirements
+- Bucket name: HDFS
+- Transition objects to different storage classes after 30 days
+- Expire (delete) objects after 90 days
+- Handle different prefixes/folders with customizable options
+- Handle incomplete multipart uploads
+- Ensure HIPAA compliance for healthcare project
+- Optimize for cost

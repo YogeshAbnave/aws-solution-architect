@@ -1,0 +1,26 @@
+{
+  "Rules": [
+    {
+      "ID": "TransitionToGlacier",
+      "Status": "Enabled",
+      "Filter": {
+        "Prefix": "Replace-Me-With-Prefix/"
+      },
+      "Transitions": [
+        {
+          "Days": 30,
+          "StorageClass": "GLACIER"
+        }
+      ],
+      "Expiration": {
+        "Days": 90
+      },
+      "NoncurrentVersionExpiration": {
+        "NoncurrentDays": 90
+      },
+      "AbortIncompleteMultipartUpload": {
+        "DaysAfterInitiation": 7
+      }
+    }
+  ]
+}
