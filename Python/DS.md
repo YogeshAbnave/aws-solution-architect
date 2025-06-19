@@ -98,3 +98,68 @@
 
 ---
 
+---
+
+# Python List and String Practice Questions
+
+## 1. Find the Longest Word
+- Write code to find the word with the maximum length in the `words` list.
+
+## 2. Reverse the List
+- Write a loop that reverses the `words` list without using `reverse()` or slicing.
+
+## 3. Word Frequency
+- Count the frequency of each word in the `words` list using a dictionary.
+
+## 4. Unique Words from String
+- Extract and return a list of unique words from the `text` string.
+
+## 5. Count Vowels in Text
+- Write a program to count the total number of vowels in the `text` string.
+
+## 6. Check if Any Word is a Palindrome
+- From the `words` list, check if any word is a palindrome.
+
+## 7. Filter Words Longer Than 5 Characters
+- Write code to filter and return only those words from `words` list that are longer than 5 characters.
+
+## 8. Most Frequent Word in List
+- Write code to identify the most frequently occurring word in the `words` list.
+
+## 9. Remove Duplicate Words from List
+- Remove all duplicate entries from the `words` list while maintaining the order.
+
+## 10. Total Character Count in List
+- Calculate the total number of characters (excluding spaces) across all words in the `words` list.
+
+## 11. Count How Many Words Start with a Vowel
+- Write code to count how many words in the `words` list start with a vowel.
+
+## 12. Convert List to Sentence
+- Convert the `words` list into a single space-separated sentence string.
+
+## 13. Print Words Ending with a Specific Character
+- Write a loop to print all words in the `words` list that end with the letter 'e'.
+
+## 14. Create a Dictionary with Word Lengths
+- Generate a dictionary where keys are words and values are the lengths of those words.
+
+## 15. Count Words in Text
+- Split the `text` string by space and count the number of words.
+
+## 16. Capitalize First Letter of Each Word in List
+- Write code to capitalize the first letter of each word in the `words` list.
+
+## 17. Find All Words Containing a Specific Letter
+- Print all words in the `words` list that contain the letter 'a'.
+
+## 18. Replace a Specific Word in List
+- Replace the word 'apple' with 'grape' in the `words` list.
+
+## 19. Count How Many Words Have Even Length
+- Write code to count how many words in `words` have an even number of characters.
+
+## 20. Remove Words Containing a Specific Letter
+- Remove all words from the `words` list that contain the letter 'e'.
+
+---
