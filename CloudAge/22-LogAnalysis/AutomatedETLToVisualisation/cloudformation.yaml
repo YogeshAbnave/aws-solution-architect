@@ -1,0 +1,2045 @@
+Metadata:
+  GblIamSecurity: 1.0.0
+  AwsLabsManagedResource:
+    - GblLabMonitoring:13
+Resources:
+  VpcLogBucket54DD920F:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      BucketName:
+        Fn::Join:
+          - ""
+          - - vpc-flow-logs-
+            - Fn::Select:
+                - 0
+                - Fn::Split:
+                    - "-"
+                    - Fn::Select:
+                        - 2
+                        - Fn::Split:
+                            - /
+                            - Ref: AWS::StackId
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: GblBucket
+          Value: 1.0.0
+        - Key: GblCustomComponent
+          Value: "True"
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/VpcLogBucket/Resource
+  VpcLogBucketPolicy314FEB6D:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket:
+        Ref: VpcLogBucket54DD920F
+      PolicyDocument:
+        Statement:
+          - Action:
+              - s3:Abort*
+              - s3:PutObject
+              - s3:PutObjectLegalHold
+              - s3:PutObjectRetention
+              - s3:PutObjectTagging
+              - s3:PutObjectVersionTagging
+            Effect: Allow
+            Principal:
+              Service: delivery.logs.amazonaws.com
+            Resource:
+              Fn::Join:
+                - ""
+                - - Fn::GetAtt:
+                      - VpcLogBucket54DD920F
+                      - Arn
+                  - /*
+          - Action: s3:GetBucketAcl
+            Effect: Allow
+            Principal:
+              Service: delivery.logs.amazonaws.com
+            Resource:
+              - Fn::GetAtt:
+                  - VpcLogBucket54DD920F
+                  - Arn
+              - Fn::Join:
+                  - ""
+                  - - Fn::GetAtt:
+                        - VpcLogBucket54DD920F
+                        - Arn
+                    - //*
+        Version: "2012-10-17"
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/VpcLogBucket/Policy/Resource
+  LabDataBucketB71FB2F3:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      BucketName:
+        Fn::Join:
+          - ""
+          - - lab-data-bucket-
+            - Fn::Select:
+                - 0
+                - Fn::Split:
+                    - "-"
+                    - Fn::Select:
+                        - 2
+                        - Fn::Split:
+                            - /
+                            - Ref: AWS::StackId
+      Tags:
+        - Key: GblBucket
+          Value: 1.0.0
+        - Key: GblCustomComponent
+          Value: "True"
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/LabDataBucket/Resource
+  AthenaQueryResultsBucketAE74152B:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      BucketName:
+        Fn::Join:
+          - ""
+          - - athena-query-results-
+            - Fn::Select:
+                - 0
+                - Fn::Split:
+                    - "-"
+                    - Fn::Select:
+                        - 2
+                        - Fn::Split:
+                            - /
+                            - Ref: AWS::StackId
+      Tags:
+        - Key: GblBucket
+          Value: 1.0.0
+        - Key: GblCustomComponent
+          Value: "True"
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/AthenaQueryResultsBucket/Resource
+  AthenaCloudFormationBucketC2DE991F:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      BucketName:
+        Fn::Join:
+          - ""
+          - - athena-cloudformation-
+            - Fn::Select:
+                - 0
+                - Fn::Split:
+                    - "-"
+                    - Fn::Select:
+                        - 2
+                        - Fn::Split:
+                            - /
+                            - Ref: AWS::StackId
+      Tags:
+        - Key: GblBucket
+          Value: 1.0.0
+        - Key: GblCustomComponent
+          Value: "True"
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/AthenaCloudFormationBucket/Resource
+  AthenaCloudFormationBucketNotificationsD0A2E83E:
+    Type: Custom::S3BucketNotifications
+    Properties:
+      ServiceToken:
+        Fn::GetAtt:
+          - BucketNotificationsHandler050a0587b7544547bf325f094a3db8347ECC3691
+          - Arn
+      BucketName:
+        Ref: AthenaCloudFormationBucketC2DE991F
+      NotificationConfiguration:
+        LambdaFunctionConfigurations:
+          - Events:
+              - s3:ObjectCreated:*
+            LambdaFunctionArn:
+              Fn::GetAtt:
+                - fixAthenaTemplateFunction446C00F2
+                - Arn
+      Managed: true
+    DependsOn:
+      - AthenaCloudFormationBucketAllowBucketNotificationsToCdkLab1e434b68StackfixAthenaTemplateFunction040A9A75F6A7A931
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/AthenaCloudFormationBucket/Notifications/Resource
+  AthenaCloudFormationBucketAllowBucketNotificationsToCdkLab1e434b68StackfixAthenaTemplateFunction040A9A75F6A7A931:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - fixAthenaTemplateFunction446C00F2
+          - Arn
+      Principal: s3.amazonaws.com
+      SourceAccount:
+        Ref: AWS::AccountId
+      SourceArn:
+        Fn::GetAtt:
+          - AthenaCloudFormationBucketC2DE991F
+          - Arn
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/AthenaCloudFormationBucket/AllowBucketNotificationsToCdkLab1e434b68StackfixAthenaTemplateFunction040A9A75
+  LabVPC841D92ED:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.10.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value: LabVPC
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/LabVPC/Resource
+  LabVPCpublicSubnet1Subnet01111A5D:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone:
+        Fn::Select:
+          - 0
+          - Fn::GetAZs: ""
+      CidrBlock: 10.10.0.0/24
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: aws-cdk:subnet-name
+          Value: public
+        - Key: aws-cdk:subnet-type
+          Value: Public
+        - Key: Name
+          Value: CdkLab1e434b68Stack/LabVPC/publicSubnet1
+      VpcId:
+        Ref: LabVPC841D92ED
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/LabVPC/publicSubnet1/Subnet
+  LabVPCpublicSubnet1RouteTableC52E8EF0:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: CdkLab1e434b68Stack/LabVPC/publicSubnet1
+      VpcId:
+        Ref: LabVPC841D92ED
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/LabVPC/publicSubnet1/RouteTable
+  LabVPCpublicSubnet1RouteTableAssociationEE648717:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: LabVPCpublicSubnet1RouteTableC52E8EF0
+      SubnetId:
+        Ref: LabVPCpublicSubnet1Subnet01111A5D
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/LabVPC/publicSubnet1/RouteTableAssociation
+  LabVPCpublicSubnet1DefaultRoute14878013:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        Ref: LabVPCIGW420A2B26
+      RouteTableId:
+        Ref: LabVPCpublicSubnet1RouteTableC52E8EF0
+    DependsOn:
+      - LabVPCVPCGW4296DBEB
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/LabVPC/publicSubnet1/DefaultRoute
+  LabVPCpublicSubnet1EIP1BE16868:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value: CdkLab1e434b68Stack/LabVPC/publicSubnet1
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/LabVPC/publicSubnet1/EIP
+  LabVPCpublicSubnet1NATGatewayAE1D803C:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId:
+        Fn::GetAtt:
+          - LabVPCpublicSubnet1EIP1BE16868
+          - AllocationId
+      SubnetId:
+        Ref: LabVPCpublicSubnet1Subnet01111A5D
+      Tags:
+        - Key: Name
+          Value: CdkLab1e434b68Stack/LabVPC/publicSubnet1
+    DependsOn:
+      - LabVPCpublicSubnet1DefaultRoute14878013
+      - LabVPCpublicSubnet1RouteTableAssociationEE648717
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/LabVPC/publicSubnet1/NATGateway
+  LabVPCpublicSubnet2SubnetB4A7E582:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone:
+        Fn::Select:
+          - 1
+          - Fn::GetAZs: ""
+      CidrBlock: 10.10.1.0/24
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: aws-cdk:subnet-name
+          Value: public
+        - Key: aws-cdk:subnet-type
+          Value: Public
+        - Key: Name
+          Value: CdkLab1e434b68Stack/LabVPC/publicSubnet2
+      VpcId:
+        Ref: LabVPC841D92ED
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/LabVPC/publicSubnet2/Subnet
+  LabVPCpublicSubnet2RouteTableDE009949:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: CdkLab1e434b68Stack/LabVPC/publicSubnet2
+      VpcId:
+        Ref: LabVPC841D92ED
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/LabVPC/publicSubnet2/RouteTable
+  LabVPCpublicSubnet2RouteTableAssociation27E55162:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: LabVPCpublicSubnet2RouteTableDE009949
+      SubnetId:
+        Ref: LabVPCpublicSubnet2SubnetB4A7E582
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/LabVPC/publicSubnet2/RouteTableAssociation
+  LabVPCpublicSubnet2DefaultRouteB18FEE1D:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        Ref: LabVPCIGW420A2B26
+      RouteTableId:
+        Ref: LabVPCpublicSubnet2RouteTableDE009949
+    DependsOn:
+      - LabVPCVPCGW4296DBEB
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/LabVPC/publicSubnet2/DefaultRoute
+  LabVPCpublicSubnet2EIP46CDC4BD:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value: CdkLab1e434b68Stack/LabVPC/publicSubnet2
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/LabVPC/publicSubnet2/EIP
+  LabVPCpublicSubnet2NATGatewayE283D311:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId:
+        Fn::GetAtt:
+          - LabVPCpublicSubnet2EIP46CDC4BD
+          - AllocationId
+      SubnetId:
+        Ref: LabVPCpublicSubnet2SubnetB4A7E582
+      Tags:
+        - Key: Name
+          Value: CdkLab1e434b68Stack/LabVPC/publicSubnet2
+    DependsOn:
+      - LabVPCpublicSubnet2DefaultRouteB18FEE1D
+      - LabVPCpublicSubnet2RouteTableAssociation27E55162
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/LabVPC/publicSubnet2/NATGateway
+  LabVPCprivateSubnet1SubnetFE4F3245:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone:
+        Fn::Select:
+          - 0
+          - Fn::GetAZs: ""
+      CidrBlock: 10.10.2.0/24
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: aws-cdk:subnet-name
+          Value: private
+        - Key: aws-cdk:subnet-type
+          Value: Private
+        - Key: Name
+          Value: CdkLab1e434b68Stack/LabVPC/privateSubnet1
+      VpcId:
+        Ref: LabVPC841D92ED
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/LabVPC/privateSubnet1/Subnet
+  LabVPCprivateSubnet1RouteTable52FEF67C:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: CdkLab1e434b68Stack/LabVPC/privateSubnet1
+      VpcId:
+        Ref: LabVPC841D92ED
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/LabVPC/privateSubnet1/RouteTable
+  LabVPCprivateSubnet1RouteTableAssociationA43BA9C9:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: LabVPCprivateSubnet1RouteTable52FEF67C
+      SubnetId:
+        Ref: LabVPCprivateSubnet1SubnetFE4F3245
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/LabVPC/privateSubnet1/RouteTableAssociation
+  LabVPCprivateSubnet1DefaultRoute6229FB24:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId:
+        Ref: LabVPCpublicSubnet1NATGatewayAE1D803C
+      RouteTableId:
+        Ref: LabVPCprivateSubnet1RouteTable52FEF67C
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/LabVPC/privateSubnet1/DefaultRoute
+  LabVPCprivateSubnet2Subnet9EEE5B77:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone:
+        Fn::Select:
+          - 1
+          - Fn::GetAZs: ""
+      CidrBlock: 10.10.3.0/24
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: aws-cdk:subnet-name
+          Value: private
+        - Key: aws-cdk:subnet-type
+          Value: Private
+        - Key: Name
+          Value: CdkLab1e434b68Stack/LabVPC/privateSubnet2
+      VpcId:
+        Ref: LabVPC841D92ED
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/LabVPC/privateSubnet2/Subnet
+  LabVPCprivateSubnet2RouteTableE6C6B365:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: CdkLab1e434b68Stack/LabVPC/privateSubnet2
+      VpcId:
+        Ref: LabVPC841D92ED
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/LabVPC/privateSubnet2/RouteTable
+  LabVPCprivateSubnet2RouteTableAssociationEE8CC00F:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: LabVPCprivateSubnet2RouteTableE6C6B365
+      SubnetId:
+        Ref: LabVPCprivateSubnet2Subnet9EEE5B77
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/LabVPC/privateSubnet2/RouteTableAssociation
+  LabVPCprivateSubnet2DefaultRouteEC58D78B:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId:
+        Ref: LabVPCpublicSubnet2NATGatewayE283D311
+      RouteTableId:
+        Ref: LabVPCprivateSubnet2RouteTableE6C6B365
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/LabVPC/privateSubnet2/DefaultRoute
+  LabVPCIGW420A2B26:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: LabVPC
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/LabVPC/IGW
+  LabVPCVPCGW4296DBEB:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId:
+        Ref: LabVPCIGW420A2B26
+      VpcId:
+        Ref: LabVPC841D92ED
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/LabVPC/VPCGW
+  VPCFlowLogGroup9559E1E7:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 731
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/VPCFlowLogGroup/Resource
+  VPCFlowlogsRole1D44F1A1:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: vpc-flow-logs.amazonaws.com
+        Version: "2012-10-17"
+      RoleName:
+        Fn::Join:
+          - ""
+          - - VPCFlowLog-Role_
+            - Ref: AWS::Region
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/VPCFlowlogsRole/Resource
+  VPCFlowlogsRoleDefaultPolicyD5ACF34F:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action: "*"
+            Effect: Deny
+            Resource:
+              - Fn::GetAtt:
+                  - GblLabMonitoringgbllabmonitoringfunctionEFA91CEB
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringgbllabmonitoringrole5A68A849
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringmonitoringruleec2474DBA6D
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringmonitoringruleglueA0F10C68
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringmonitoringrulelambda105995BB
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringmonitoringrulequicksight42CF344D
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringmonitoringrulesagemaker1C170BB5
+                  - Arn
+          - Action: lambda:PutProvisionedConcurrencyConfig
+            Effect: Deny
+            Resource: "*"
+        Version: "2012-10-17"
+      PolicyName: VPCFlowlogsRoleDefaultPolicyD5ACF34F
+      Roles:
+        - Ref: VPCFlowlogsRole1D44F1A1
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/VPCFlowlogsRole/DefaultPolicy/Resource
+  vpcFlowLogPolicyD13282E7:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:DescribeLogGroups
+              - logs:DescribeLogStreams
+              - logs:PutLogEvents
+            Effect: Allow
+            Resource:
+              Fn::GetAtt:
+                - VPCFlowLogGroup9559E1E7
+                - Arn
+        Version: "2012-10-17"
+      PolicyName: VPCFlowLog
+      Roles:
+        - Ref: VPCFlowlogsRole1D44F1A1
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/vpcFlowLogPolicy/Resource
+  ALB1SecurityGroup4D97F4D8:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: CdkLab1e434b68Stack/ALB1SecurityGroup
+      GroupName: LabVPC-SGLoadBalancer
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          Description: Allow all outbound traffic by default
+          IpProtocol: "-1"
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          Description: allow http traffic
+          FromPort: 80
+          IpProtocol: tcp
+          ToPort: 80
+      VpcId:
+        Ref: LabVPC841D92ED
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/ALB1SecurityGroup/Resource
+  ALB1SecurityGroupfromCdkLab1e434b68StackALB1SecurityGroupCACABDDE80C0D71CDE:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: allow traffic from ALB
+      FromPort: 80
+      GroupId:
+        Fn::GetAtt:
+          - ALB1SecurityGroup4D97F4D8
+          - GroupId
+      IpProtocol: tcp
+      SourceSecurityGroupId:
+        Fn::GetAtt:
+          - ALB1SecurityGroup4D97F4D8
+          - GroupId
+      ToPort: 80
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/ALB1SecurityGroup/from CdkLab1e434b68StackALB1SecurityGroupCACABDDE:80
+  ALBLoadBalancer45FA5B43:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      LoadBalancerAttributes:
+        - Key: deletion_protection.enabled
+          Value: "false"
+      Scheme: internet-facing
+      SecurityGroups:
+        - Fn::GetAtt:
+            - ALB1SecurityGroup4D97F4D8
+            - GroupId
+      Subnets:
+        - Ref: LabVPCpublicSubnet1Subnet01111A5D
+        - Ref: LabVPCpublicSubnet2SubnetB4A7E582
+      Type: application
+    DependsOn:
+      - LabVPCpublicSubnet1DefaultRoute14878013
+      - LabVPCpublicSubnet1RouteTableAssociationEE648717
+      - LabVPCpublicSubnet2DefaultRouteB18FEE1D
+      - LabVPCpublicSubnet2RouteTableAssociation27E55162
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/ALBLoadBalancer/Resource
+  ALBLoadBalancerALBListenerE143D04A:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - TargetGroupArn:
+            Ref: ALBLoadBalancerALBListenerWebInstanceFleetGroupF0467C15
+          Type: forward
+      LoadBalancerArn:
+        Ref: ALBLoadBalancer45FA5B43
+      Port: 80
+      Protocol: HTTP
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/ALBLoadBalancer/ALBListener/Resource
+  ALBLoadBalancerALBListenerWebInstanceFleetGroupF0467C15:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Port: 80
+      Protocol: HTTP
+      TargetGroupAttributes:
+        - Key: stickiness.enabled
+          Value: "false"
+      TargetType: instance
+      VpcId:
+        Ref: LabVPC841D92ED
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/ALBLoadBalancer/ALBListener/WebInstanceFleetGroup/Resource
+  WebInstancePolicy93B4062C:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - cloudwatch:PutMetricData
+              - ec2:DescribeInstanceStatus
+              - ssm:GetParameter
+            Effect: Allow
+            Resource: "*"
+          - Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:DescribeLogStreams
+              - logs:PutLogEvents
+            Effect: Allow
+            Resource: arn:aws:logs:*:*:*
+        Version: "2012-10-17"
+      PolicyName: LabVPC-EC2-Policy
+      Roles:
+        - Ref: webInstanceRoleC0446AB7
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/WebInstancePolicy/Resource
+  webInstanceRoleC0446AB7:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/AmazonSSMManagedInstanceCore
+      RoleName:
+        Fn::Join:
+          - ""
+          - - LabVPC-EC2-Role-
+            - Ref: AWS::Region
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/webInstanceRole/Resource
+  webInstanceRoleDefaultPolicy471F81DD:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action: "*"
+            Effect: Deny
+            Resource:
+              - Fn::GetAtt:
+                  - GblLabMonitoringgbllabmonitoringfunctionEFA91CEB
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringgbllabmonitoringrole5A68A849
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringmonitoringruleec2474DBA6D
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringmonitoringruleglueA0F10C68
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringmonitoringrulelambda105995BB
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringmonitoringrulequicksight42CF344D
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringmonitoringrulesagemaker1C170BB5
+                  - Arn
+          - Action: lambda:PutProvisionedConcurrencyConfig
+            Effect: Deny
+            Resource: "*"
+        Version: "2012-10-17"
+      PolicyName: webInstanceRoleDefaultPolicy471F81DD
+      Roles:
+        - Ref: webInstanceRoleC0446AB7
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/webInstanceRole/DefaultPolicy/Resource
+  WebInstanceInstanceProfile09674C3E:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: LabVPC-EC2-Role
+      Roles:
+        - Ref: webInstanceRoleC0446AB7
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/WebInstanceInstanceProfile/Resource
+  copyDataRole85605A2D:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      RoleName: data_copy_role
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/copyDataRole/Resource
+  copyDataRoleDefaultPolicyE40F6998:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - s3:Describe*
+              - s3:Get*
+              - s3:List*
+              - s3:PutObject
+              - s3:PutObjectAcl
+              - s3:PutObjectTagging
+            Effect: Allow
+            Resource:
+              Fn::Join:
+                - ""
+                - - Fn::GetAtt:
+                      - AthenaCloudFormationBucketC2DE991F
+                      - Arn
+                  - /*
+          - Action: "*"
+            Effect: Deny
+            Resource:
+              - Fn::GetAtt:
+                  - GblLabMonitoringgbllabmonitoringfunctionEFA91CEB
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringgbllabmonitoringrole5A68A849
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringmonitoringruleec2474DBA6D
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringmonitoringruleglueA0F10C68
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringmonitoringrulelambda105995BB
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringmonitoringrulequicksight42CF344D
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringmonitoringrulesagemaker1C170BB5
+                  - Arn
+          - Action: lambda:PutProvisionedConcurrencyConfig
+            Effect: Deny
+            Resource: "*"
+        Version: "2012-10-17"
+      PolicyName: copyDataRoleDefaultPolicyE40F6998
+      Roles:
+        - Ref: copyDataRole85605A2D
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/copyDataRole/DefaultPolicy/Resource
+  copyDataPolicy02B66F21:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:DeleteLogGroup
+              - logs:DeleteLogStream
+              - logs:PutLogEvents
+              - s3:*
+            Effect: Allow
+            Resource: "*"
+        Version: "2012-10-17"
+      PolicyName: copyDataAccessPolicy
+      Roles:
+        - Ref: copyDataRole85605A2D
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/copyDataPolicy/Resource
+  loaddata7BA80661:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket: pu-base-buckets-v1-provision-lab
+        S3Key: support/data_copy_lambda.zip
+      FunctionName: load_data_function
+      Handler: dataCopy.lambda_handler
+      MemorySize: 512
+      Role:
+        Fn::GetAtt:
+          - copyDataRole85605A2D
+          - Arn
+      Runtime: python3.10
+      Timeout: 300
+    DependsOn:
+      - copyDataRoleDefaultPolicyE40F6998
+      - copyDataRole85605A2D
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/load_data/Resource
+  invokeCopyFunction:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken:
+        Fn::GetAtt:
+          - loaddata7BA80661
+          - Arn
+      sourceBucket: pu-base-buckets-v1-provision-lab
+      destinationBucket:
+        Ref: LabDataBucketB71FB2F3
+      keyPrefix: 1e434b68-7952-44f9-b666-835d6037deb1
+      fileList:
+        - server.py
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/invokeCopyFunction
+  WebInstanceSG39008395:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: CdkLab1e434b68Stack/WebInstanceSG
+      GroupName: Web-Instance-SG
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          Description: Allow all outbound traffic by default
+          IpProtocol: "-1"
+      VpcId:
+        Ref: LabVPC841D92ED
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/WebInstanceSG/Resource
+  WebInstanceSGfromCdkLab1e434b68StackALB1SecurityGroupCACABDDE80F6AA42CB:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Load balancer to target
+      FromPort: 80
+      GroupId:
+        Fn::GetAtt:
+          - WebInstanceSG39008395
+          - GroupId
+      IpProtocol: tcp
+      SourceSecurityGroupId:
+        Fn::GetAtt:
+          - ALB1SecurityGroup4D97F4D8
+          - GroupId
+      ToPort: 80
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/WebInstanceSG/from CdkLab1e434b68StackALB1SecurityGroupCACABDDE:80
+  WebInstanceLaunchTemplateProfile25A0AE0C:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - Ref: webInstanceRoleC0446AB7
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/WebInstanceLaunchTemplate/Profile
+  WebInstanceLaunchTemplateFF7E3B3B:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateData:
+        IamInstanceProfile:
+          Arn:
+            Fn::GetAtt:
+              - WebInstanceLaunchTemplateProfile25A0AE0C
+              - Arn
+        ImageId:
+          Ref: SsmParameterValueawsserviceamiamazonlinuxlatestal2023amikernel61x8664C96584B6F00A464EAD1953AFF4B05118Parameter
+        InstanceType: t3.small
+        SecurityGroupIds:
+          - Fn::GetAtt:
+              - WebInstanceSG39008395
+              - GroupId
+        TagSpecifications:
+          - ResourceType: instance
+            Tags:
+              - Key: GblCustomComponent
+                Value: "True"
+              - Key: GblLaunchTemplate
+                Value: 1.0.0
+              - Key: Name
+                Value: Web Instance
+          - ResourceType: volume
+            Tags:
+              - Key: GblCustomComponent
+                Value: "True"
+              - Key: GblLaunchTemplate
+                Value: 1.0.0
+              - Key: Name
+                Value: Web Instance
+        UserData:
+          Fn::Base64:
+            Fn::Join:
+              - ""
+              - - |-
+                  #!/bin/bash
+                  dnf -y updateaws s3 cp s3://
+                - Ref: LabDataBucketB71FB2F3
+                - "/server.py /home/ec2-userpython3 /home/ec2-user/server.py -p 80 -r "
+                - Ref: AWS::Region
+      LaunchTemplateName:
+        Fn::Join:
+          - ""
+          - - WebInstance-
+            - Fn::Select:
+                - 0
+                - Fn::Split:
+                    - "-"
+                    - Fn::Select:
+                        - 2
+                        - Fn::Split:
+                            - /
+                            - Ref: AWS::StackId
+      TagSpecifications:
+        - ResourceType: launch-template
+          Tags:
+            - Key: GblCustomComponent
+              Value: "True"
+            - Key: GblLaunchTemplate
+              Value: 1.0.0
+            - Key: Name
+              Value: Web Instance
+    DependsOn:
+      - webInstanceRoleDefaultPolicy471F81DD
+      - webInstanceRoleC0446AB7
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/WebInstanceLaunchTemplate/Resource
+  WebAppAutoScalingGroupASG36AEFCC7:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      LaunchTemplate:
+        LaunchTemplateId:
+          Ref: WebInstanceLaunchTemplateFF7E3B3B
+        Version:
+          Fn::GetAtt:
+            - WebInstanceLaunchTemplateFF7E3B3B
+            - LatestVersionNumber
+      MaxSize: "1"
+      MinSize: "1"
+      Tags:
+        - Key: GblAutoScaling
+          PropagateAtLaunch: true
+          Value: 1.0.0
+        - Key: GblCustomComponent
+          PropagateAtLaunch: true
+          Value: "True"
+      TargetGroupARNs:
+        - Ref: ALBLoadBalancerALBListenerWebInstanceFleetGroupF0467C15
+      VPCZoneIdentifier:
+        - Ref: LabVPCprivateSubnet1SubnetFE4F3245
+        - Ref: LabVPCprivateSubnet2Subnet9EEE5B77
+    UpdatePolicy:
+      AutoScalingScheduledAction:
+        IgnoreUnmodifiedGroupSizeProperties: true
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/WebAppAutoScalingGroup/ASG
+  quickSightLabRole8AC873ED:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: quicksight.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSQuicksightAthenaAccess
+      RoleName: quicksight_lab_role
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/quickSightLabRole/Resource
+  quickSightLabRoleDefaultPolicyD116141C:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action: "*"
+            Effect: Deny
+            Resource:
+              - Fn::GetAtt:
+                  - GblLabMonitoringgbllabmonitoringfunctionEFA91CEB
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringgbllabmonitoringrole5A68A849
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringmonitoringruleec2474DBA6D
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringmonitoringruleglueA0F10C68
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringmonitoringrulelambda105995BB
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringmonitoringrulequicksight42CF344D
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringmonitoringrulesagemaker1C170BB5
+                  - Arn
+          - Action: lambda:PutProvisionedConcurrencyConfig
+            Effect: Deny
+            Resource: "*"
+        Version: "2012-10-17"
+      PolicyName: quickSightLabRoleDefaultPolicyD116141C
+      Roles:
+        - Ref: quickSightLabRole8AC873ED
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/quickSightLabRole/DefaultPolicy/Resource
+  QuicksightServicePolicy71687544:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action: s3:ListAllMyBuckets
+            Effect: Allow
+            Resource: "*"
+          - Action:
+              - s3:AbortMultipartUpload
+              - s3:CreateBucket
+              - s3:GetBucketAcl
+              - s3:GetBucketLocation
+              - s3:GetBucketPolicy
+              - s3:GetBucketPolicyStatus
+              - s3:GetBucketPublicAccessBlock
+              - s3:GetObject
+              - s3:GetObjectVersion
+              - s3:ListBucket
+              - s3:ListBucketMultipartUploads
+              - s3:ListMultipartUploadParts
+              - s3:PutBucketPublicAccessBlock
+              - s3:PutObject
+            Effect: Allow
+            Resource:
+              - Fn::GetAtt:
+                  - AthenaCloudFormationBucketC2DE991F
+                  - Arn
+              - Fn::GetAtt:
+                  - AthenaQueryResultsBucketAE74152B
+                  - Arn
+              - Fn::GetAtt:
+                  - VpcLogBucket54DD920F
+                  - Arn
+              - Fn::Join:
+                  - ""
+                  - - Fn::GetAtt:
+                        - AthenaCloudFormationBucketC2DE991F
+                        - Arn
+                    - /*
+              - Fn::Join:
+                  - ""
+                  - - Fn::GetAtt:
+                        - AthenaQueryResultsBucketAE74152B
+                        - Arn
+                    - /*
+              - Fn::Join:
+                  - ""
+                  - - Fn::GetAtt:
+                        - VpcLogBucket54DD920F
+                        - Arn
+                    - /*
+        Version: "2012-10-17"
+      PolicyName: QuicksightServicePolicy
+      Roles:
+        - Ref: quickSightLabRole8AC873ED
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/QuicksightServicePolicy/Resource
+  fixAthenaTemplateFunction446C00F2:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: |
+          from urllib.parse import unquote_plus
+
+          import boto3
+
+          s3_resource = boto3.resource("s3")
+
+
+          def find_position_to_add_permission_boundary(doc_lines: list[str]):
+              found_role = False
+              for index, line in enumerate(doc_lines):
+                  if "Type: AWS::IAM::Role" in line:
+                      found_role = True
+                  elif found_role and "Properties:" in line:
+                      return index + 1
+              return None
+
+
+          def fix_template(bucket_name: str, object_key: str):
+              s3_object = s3_resource.Object(bucket_name, object_key)
+              object_content = s3_object.get()["Body"].read().decode("utf-8")
+
+              all_lines = object_content.splitlines()
+              lines_not_reserved_concurrency = [
+                  line for line in all_lines if "ReservedConcurrentExecutions: 1" not in line
+              ]
+
+              if len(lines_not_reserved_concurrency) != len(all_lines):
+                  print("Fixed reserved concurrency")
+                  position_for_permission_boundary = find_position_to_add_permission_boundary(
+                      lines_not_reserved_concurrency
+                  )
+                  if position_for_permission_boundary:
+                      current_line = lines_not_reserved_concurrency[
+                          position_for_permission_boundary
+                      ]
+                      # Add Permission Boundary to the Role
+                      spaces = len(current_line) - len(current_line.lstrip())
+
+                      lines_not_reserved_concurrency.insert(
+                          position_for_permission_boundary,
+                          f"{' ' * spaces}"
+                          + "PermissionsBoundary: !Sub 'arn:aws:iam::${AWS::AccountId}:policy/boundary_for_vpc_logs_template_role'",
+                      )
+                  print("Removing reserved concurrency")
+                  clean_template = "\n".join(lines_not_reserved_concurrency)
+                  s3_object.put(Body=clean_template.encode("utf-8"))
+              else:
+                  print("No reserved concurrency to fix")
+
+
+          def lambda_handler(event, context):
+              for record in event.get("Records"):
+                  event_name = record.get("eventName")
+                  if record.get("eventSource") == "aws:s3" and event_name.startswith(
+                      "ObjectCreated:"
+                  ):
+                      s3_event = record.get("s3")
+                      bucket_name = s3_event.get("bucket", {}).get("name")
+                      object_key = unquote_plus(s3_event.get("object", {}).get("key"))
+                      if object_key.endswith("yml") or object_key.endswith("yaml"):
+                          print(f"Will check object {object_key} at bucket {bucket_name}")
+                          fix_template(bucket_name, object_key)
+      FunctionName: fix_athena_template_function
+      Handler: index.lambda_handler
+      MemorySize: 512
+      Role:
+        Fn::GetAtt:
+          - copyDataRole85605A2D
+          - Arn
+      Runtime: python3.11
+      Timeout: 300
+    DependsOn:
+      - copyDataRoleDefaultPolicyE40F6998
+      - copyDataRole85605A2D
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/fixAthenaTemplateFunction/Resource
+  BucketNotificationsHandler050a0587b7544547bf325f094a3db834RoleB6FB88EC:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/BucketNotificationsHandler050a0587b7544547bf325f094a3db834/Role/Resource
+  BucketNotificationsHandler050a0587b7544547bf325f094a3db834RoleDefaultPolicy2CF63D36:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action: s3:PutBucketNotification
+            Effect: Allow
+            Resource: "*"
+          - Action: "*"
+            Effect: Deny
+            Resource:
+              - Fn::GetAtt:
+                  - GblLabMonitoringgbllabmonitoringfunctionEFA91CEB
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringgbllabmonitoringrole5A68A849
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringmonitoringruleec2474DBA6D
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringmonitoringruleglueA0F10C68
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringmonitoringrulelambda105995BB
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringmonitoringrulequicksight42CF344D
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringmonitoringrulesagemaker1C170BB5
+                  - Arn
+          - Action: lambda:PutProvisionedConcurrencyConfig
+            Effect: Deny
+            Resource: "*"
+        Version: "2012-10-17"
+      PolicyName: BucketNotificationsHandler050a0587b7544547bf325f094a3db834RoleDefaultPolicy2CF63D36
+      Roles:
+        - Ref: BucketNotificationsHandler050a0587b7544547bf325f094a3db834RoleB6FB88EC
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/BucketNotificationsHandler050a0587b7544547bf325f094a3db834/Role/DefaultPolicy/Resource
+  BucketNotificationsHandler050a0587b7544547bf325f094a3db8347ECC3691:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: AWS CloudFormation handler for "Custom::S3BucketNotifications" resources (@aws-cdk/aws-s3)
+      Code:
+        ZipFile: |
+          import boto3  # type: ignore
+          import json
+          import logging
+          import urllib.request
+
+          s3 = boto3.client("s3")
+
+          EVENTBRIDGE_CONFIGURATION = 'EventBridgeConfiguration'
+          CONFIGURATION_TYPES = ["TopicConfigurations", "QueueConfigurations", "LambdaFunctionConfigurations"]
+
+          def handler(event: dict, context):
+            response_status = "SUCCESS"
+            error_message = ""
+            try:
+              props = event["ResourceProperties"]
+              notification_configuration = props["NotificationConfiguration"]
+              managed = props.get('Managed', 'true').lower() == 'true'
+              stack_id = event['StackId']
+              old = event.get("OldResourceProperties", {}).get("NotificationConfiguration", {})
+              if managed:
+                config = handle_managed(event["RequestType"], notification_configuration)
+              else:
+                config = handle_unmanaged(props["BucketName"], stack_id, event["RequestType"], notification_configuration, old)
+              s3.put_bucket_notification_configuration(Bucket=props["BucketName"], NotificationConfiguration=config)
+            except Exception as e:
+              logging.exception("Failed to put bucket notification configuration")
+              response_status = "FAILED"
+              error_message = f"Error: {str(e)}. "
+            finally:
+              submit_response(event, context, response_status, error_message)
+
+          def handle_managed(request_type, notification_configuration):
+            if request_type == 'Delete':
+              return {}
+            return notification_configuration
+
+          def handle_unmanaged(bucket, stack_id, request_type, notification_configuration, old):
+            def with_id(n):
+              n['Id'] = f"{stack_id}-{hash(json.dumps(n, sort_keys=True))}"
+              return n
+
+            external_notifications = {}
+            existing_notifications = s3.get_bucket_notification_configuration(Bucket=bucket)
+            for t in CONFIGURATION_TYPES:
+              if request_type == 'Update':
+                  ids = [with_id(n) for n in old.get(t, [])]
+                  old_incoming_ids = [n['Id'] for n in ids]
+                  external_notifications[t] = [n for n in existing_notifications.get(t, []) if not n['Id'] in old_incoming_ids]
+              elif request_type == 'Delete':
+                  external_notifications[t] = [n for n in existing_notifications.get(t, []) if not n['Id'].startswith(f"{stack_id}-")]
+              elif request_type == 'Create':
+                  external_notifications[t] = [n for n in existing_notifications.get(t, [])]
+            if EVENTBRIDGE_CONFIGURATION in existing_notifications:
+              external_notifications[EVENTBRIDGE_CONFIGURATION] = existing_notifications[EVENTBRIDGE_CONFIGURATION]
+
+            if request_type == 'Delete':
+              return external_notifications
+
+            notifications = {}
+            for t in CONFIGURATION_TYPES:
+              external = external_notifications.get(t, [])
+              incoming = [with_id(n) for n in notification_configuration.get(t, [])]
+              notifications[t] = external + incoming
+
+            if EVENTBRIDGE_CONFIGURATION in notification_configuration:
+              notifications[EVENTBRIDGE_CONFIGURATION] = notification_configuration[EVENTBRIDGE_CONFIGURATION]
+            elif EVENTBRIDGE_CONFIGURATION in external_notifications:
+              notifications[EVENTBRIDGE_CONFIGURATION] = external_notifications[EVENTBRIDGE_CONFIGURATION]
+
+            return notifications
+
+          def submit_response(event: dict, context, response_status: str, error_message: str):
+            response_body = json.dumps(
+              {
+                "Status": response_status,
+                "Reason": f"{error_message}See the details in CloudWatch Log Stream: {context.log_stream_name}",
+                "PhysicalResourceId": event.get("PhysicalResourceId") or event["LogicalResourceId"],
+                "StackId": event["StackId"],
+                "RequestId": event["RequestId"],
+                "LogicalResourceId": event["LogicalResourceId"],
+                "NoEcho": False,
+              }
+            ).encode("utf-8")
+            headers = {"content-type": "", "content-length": str(len(response_body))}
+            try:
+              req = urllib.request.Request(url=event["ResponseURL"], headers=headers, data=response_body, method="PUT")
+              with urllib.request.urlopen(req) as response:
+                print(response.read().decode("utf-8"))
+              print("Status code: " + response.reason)
+            except Exception as e:
+                print("send(..) failed executing request.urlopen(..): " + str(e))
+      Handler: index.handler
+      Role:
+        Fn::GetAtt:
+          - BucketNotificationsHandler050a0587b7544547bf325f094a3db834RoleB6FB88EC
+          - Arn
+      Runtime: python3.11
+      Timeout: 300
+    DependsOn:
+      - BucketNotificationsHandler050a0587b7544547bf325f094a3db834RoleDefaultPolicy2CF63D36
+      - BucketNotificationsHandler050a0587b7544547bf325f094a3db834RoleB6FB88EC
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/BucketNotificationsHandler050a0587b7544547bf325f094a3db834/Resource
+  boundaryforvpclogstemplateroleC29BF808:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: ""
+      ManagedPolicyName: boundary_for_vpc_logs_template_role
+      Path: /
+      PolicyDocument:
+        Statement:
+          - Action:
+              - athena:*
+              - glue:*
+              - logs:*
+            Condition:
+              StringEquals:
+                aws:RequestedRegion:
+                  Ref: AWS::Region
+            Effect: Allow
+            Resource: "*"
+          - Action: "*"
+            Effect: Deny
+            Resource:
+              - Fn::GetAtt:
+                  - GblLabMonitoringgbllabmonitoringfunctionEFA91CEB
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringgbllabmonitoringrole5A68A849
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringmonitoringruleec2474DBA6D
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringmonitoringruleglueA0F10C68
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringmonitoringrulelambda105995BB
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringmonitoringrulequicksight42CF344D
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringmonitoringrulesagemaker1C170BB5
+                  - Arn
+          - Action: lambda:PutProvisionedConcurrencyConfig
+            Effect: Deny
+            Resource: "*"
+        Version: "2012-10-17"
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/boundary_for_vpc_logs_template_role/Resource
+  GblLabMonitoringgbllabmonitoringrole5A68A849:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      RoleName: gbl_lab_monitoring
+      Tags:
+        - Key: GblCustomComponent
+          Value: "True"
+        - Key: GblLabMonitoring
+          Value: 1.0.0
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/GblLabMonitoring/gbl_lab_monitoring_role/Resource
+  GblLabMonitoringgbllabmonitoringroleDefaultPolicy5F9121AB:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - ds:DeleteDirectory
+              - ds:DescribeDirectories
+              - ds:UnauthorizeApplication
+              - ec2:Delete*
+              - ec2:Describe*
+              - ec2:Disable
+              - ec2:Get*
+              - ec2:List*
+              - ec2:Revoke*
+              - ec2:Stop*
+              - ec2:Terminate*
+              - ec2:Update*
+              - glue:DeleteJob
+              - glue:GetJobs
+              - lambda:Delete*
+              - lambda:Get*
+              - lambda:List*
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              - quicksight:Delete*
+              - quicksight:Describe*
+              - quicksight:Disable*
+              - quicksight:Get*
+              - quicksight:List*
+              - quicksight:Stop*
+              - quicksight:Update*
+              - sagemaker:Delete*
+              - sagemaker:Describe*
+              - sagemaker:Disable*
+              - sagemaker:Get*
+              - sagemaker:List*
+              - sagemaker:Stop*
+            Condition:
+              StringEquals:
+                aws:RequestedRegion:
+                  Ref: AWS::Region
+            Effect: Allow
+            Resource: "*"
+        Version: "2012-10-17"
+      PolicyName: GblLabMonitoringgbllabmonitoringroleDefaultPolicy5F9121AB
+      Roles:
+        - Ref: GblLabMonitoringgbllabmonitoringrole5A68A849
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/GblLabMonitoring/gbl_lab_monitoring_role/DefaultPolicy/Resource
+  GblLabMonitoringgbllabmonitoringfunctionEFA91CEB:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket:
+          Ref: LabResourcesBucket
+        S3Key:
+          Fn::Join:
+            - ""
+            - - Ref: LabResourcesBucketKeyPrefix
+              - GblLabMonitoring:13
+      Environment:
+        Variables:
+          glue_max_allocated_capacity: "10"
+          glue_max_allocated_concurrency: "2"
+          glue_max_number_of_workers: "10"
+          glue_valid_worker_types: Standard,G.1X,G.2X,G.025X
+          glue_max_number_of_jobs: "10"
+          sage_maker_allowed_instance_count: "2"
+          sage_maker_allowed_endpoint: "3"
+          sage_maker_serverless_max_memory: "1024"
+          sage_maker_serverless_allowed_max_concurrency: "4"
+          lambda_monitoring_function: gbl_lab_monitoring
+          lambda_max_memory: "512"
+          lambda_max_storage: "1024"
+          lambda_max_timeout: "600"
+          lambda_max_provisioned_concurrency: "1"
+          ec2_max_allowed_instances: "5"
+          lab_pool_id:
+            Ref: LabPoolId
+          dry_run: "False"
+      FunctionName: gbl_lab_monitoring
+      Handler: gbl_lab_monitoring.monitor_lab.lambda_handler
+      MemorySize: 512
+      Role:
+        Fn::GetAtt:
+          - GblLabMonitoringgbllabmonitoringrole5A68A849
+          - Arn
+      Runtime: python3.11
+      Tags:
+        - Key: GblCustomComponent
+          Value: "True"
+        - Key: GblLabMonitoring
+          Value: 1.0.0
+      Timeout: 300
+    DependsOn:
+      - GblLabMonitoringgbllabmonitoringroleDefaultPolicy5F9121AB
+      - GblLabMonitoringgbllabmonitoringrole5A68A849
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/GblLabMonitoring/gbl_lab_monitoring_function/Resource
+  GblLabMonitoringmonitoringruleglueA0F10C68:
+    Type: AWS::Events::Rule
+    Properties:
+      EventPattern:
+        source:
+          - aws.glue
+        detail-type:
+          - AWS API Call via CloudTrail
+        detail:
+          eventSource:
+            - glue.amazonaws.com
+          eventName:
+            - StartJobRun
+      Targets:
+        - Arn:
+            Fn::GetAtt:
+              - GblLabMonitoringgbllabmonitoringfunctionEFA91CEB
+              - Arn
+          Id: lab_monitoring_function
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/GblLabMonitoring/monitoring_rule_glue
+  GblLabMonitoringcallfromeventmonitoringglue3795E4E2:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Ref: GblLabMonitoringgbllabmonitoringfunctionEFA91CEB
+      Principal: events.amazonaws.com
+      SourceArn:
+        Fn::GetAtt:
+          - GblLabMonitoringmonitoringruleglueA0F10C68
+          - Arn
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/GblLabMonitoring/call_from_event_monitoring_glue
+  GblLabMonitoringmonitoringrulesagemaker1C170BB5:
+    Type: AWS::Events::Rule
+    Properties:
+      EventPattern:
+        source:
+          - aws.sagemaker
+        detail-type:
+          - SageMaker Endpoint State Change
+      Targets:
+        - Arn:
+            Fn::GetAtt:
+              - GblLabMonitoringgbllabmonitoringfunctionEFA91CEB
+              - Arn
+          Id: lab_monitoring_function
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/GblLabMonitoring/monitoring_rule_sagemaker
+  GblLabMonitoringcallfromeventmonitoringsagemakerBE2DFCD7:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Ref: GblLabMonitoringgbllabmonitoringfunctionEFA91CEB
+      Principal: events.amazonaws.com
+      SourceArn:
+        Fn::GetAtt:
+          - GblLabMonitoringmonitoringrulesagemaker1C170BB5
+          - Arn
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/GblLabMonitoring/call_from_event_monitoring_sagemaker
+  GblLabMonitoringmonitoringrulequicksight42CF344D:
+    Type: AWS::Events::Rule
+    Properties:
+      EventPattern:
+        source:
+          - aws.quicksight
+        detail-type:
+          - AWS API Call via CloudTrail
+        detail:
+          eventSource:
+            - quicksight.amazonaws.com
+      Targets:
+        - Arn:
+            Fn::GetAtt:
+              - GblLabMonitoringgbllabmonitoringfunctionEFA91CEB
+              - Arn
+          Id: lab_monitoring_function
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/GblLabMonitoring/monitoring_rule_quicksight
+  GblLabMonitoringcallfromeventmonitoringquicksight7C07E430:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Ref: GblLabMonitoringgbllabmonitoringfunctionEFA91CEB
+      Principal: events.amazonaws.com
+      SourceArn:
+        Fn::GetAtt:
+          - GblLabMonitoringmonitoringrulequicksight42CF344D
+          - Arn
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/GblLabMonitoring/call_from_event_monitoring_quicksight
+  GblLabMonitoringmonitoringrulelambda105995BB:
+    Type: AWS::Events::Rule
+    Properties:
+      EventPattern:
+        source:
+          - aws.lambda
+      Targets:
+        - Arn:
+            Fn::GetAtt:
+              - GblLabMonitoringgbllabmonitoringfunctionEFA91CEB
+              - Arn
+          Id: lab_monitoring_function
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/GblLabMonitoring/monitoring_rule_lambda
+  GblLabMonitoringcallfromeventmonitoringlambda57283035:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Ref: GblLabMonitoringgbllabmonitoringfunctionEFA91CEB
+      Principal: events.amazonaws.com
+      SourceArn:
+        Fn::GetAtt:
+          - GblLabMonitoringmonitoringrulelambda105995BB
+          - Arn
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/GblLabMonitoring/call_from_event_monitoring_lambda
+  GblLabMonitoringmonitoringruleec2474DBA6D:
+    Type: AWS::Events::Rule
+    Properties:
+      EventPattern:
+        source:
+          - aws.ec2
+        detail-type:
+          - EC2 Instance State-change Notification
+        detail:
+          state:
+            - pending
+            - running
+      Targets:
+        - Arn:
+            Fn::GetAtt:
+              - GblLabMonitoringgbllabmonitoringfunctionEFA91CEB
+              - Arn
+          Id: lab_monitoring_function
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/GblLabMonitoring/monitoring_rule_ec2
+  GblLabMonitoringcallfromeventmonitoringec291CF56B0:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Ref: GblLabMonitoringgbllabmonitoringfunctionEFA91CEB
+      Principal: events.amazonaws.com
+      SourceArn:
+        Fn::GetAtt:
+          - GblLabMonitoringmonitoringruleec2474DBA6D
+          - Arn
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/GblLabMonitoring/call_from_event_monitoring_ec2
+  GblLabMonitoringmanagedattachrolepolicy1699DB39:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: ""
+      Path: /
+      PolicyDocument:
+        Statement:
+          - Action: "*"
+            Effect: Deny
+            Resource:
+              - Fn::GetAtt:
+                  - GblLabMonitoringgbllabmonitoringfunctionEFA91CEB
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringgbllabmonitoringrole5A68A849
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringmonitoringruleec2474DBA6D
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringmonitoringruleglueA0F10C68
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringmonitoringrulelambda105995BB
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringmonitoringrulequicksight42CF344D
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringmonitoringrulesagemaker1C170BB5
+                  - Arn
+          - Action: lambda:PutProvisionedConcurrencyConfig
+            Effect: Deny
+            Resource: "*"
+        Version: "2012-10-17"
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/GblLabMonitoring/managed_attach_role_policy/Resource
+  GblLabMonitoringgblattachpoliciesattachpoliciesrole05A54868:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      Tags:
+        - Key: GblCustomComponent
+          Value: "True"
+        - Key: GblLabMonitoring
+          Value: 1.0.0
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/GblLabMonitoring/gbl_attach_policies/attach_policies_role/Resource
+  GblLabMonitoringgblattachpoliciesattachpoliciesroleDefaultPolicyB202E53A:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action: "*"
+            Effect: Deny
+            Resource:
+              - Fn::GetAtt:
+                  - GblLabMonitoringgbllabmonitoringfunctionEFA91CEB
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringgbllabmonitoringrole5A68A849
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringmonitoringruleec2474DBA6D
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringmonitoringruleglueA0F10C68
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringmonitoringrulelambda105995BB
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringmonitoringrulequicksight42CF344D
+                  - Arn
+              - Fn::GetAtt:
+                  - GblLabMonitoringmonitoringrulesagemaker1C170BB5
+                  - Arn
+          - Action: lambda:PutProvisionedConcurrencyConfig
+            Effect: Deny
+            Resource: "*"
+        Version: "2012-10-17"
+      PolicyName: GblLabMonitoringgblattachpoliciesattachpoliciesroleDefaultPolicyB202E53A
+      Roles:
+        - Ref: GblLabMonitoringgblattachpoliciesattachpoliciesrole05A54868
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/GblLabMonitoring/gbl_attach_policies/attach_policies_role/DefaultPolicy/Resource
+  GblLabMonitoringgblattachpoliciesattachpoliciesfunctionB8497992:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: |
+          
+          import os
+          import time
+
+          import boto3
+          import cfnresponse
+          from botocore.config import Config
+
+          MAX_ATTEMPTS = 5
+          WAIT_SECONDS = 5
+
+          BOTO3_CONFIG = Config(connect_timeout=1, read_timeout=5, retries={"mode": "standard", "total_max_attempts": 3})
+
+          iam_client = boto3.client("iam", config=BOTO3_CONFIG)
+          lambda_client = boto3.client("lambda", config=BOTO3_CONFIG)
+
+          ATTACH_POLICIES_FUNCTION_NAME = os.environ["AWS_LAMBDA_FUNCTION_NAME"]
+          ATTACH_POLICIES_ROLE_NAME = os.environ["role_name"]
+          ATTACH_POLICIES_POLICY_NAME = os.environ["attach_policies_policy_name"]
+          DELETE_RESOURCES_POLICY_NAME = os.environ["delete_resource_policy_name"]
+
+          def execute_retryable_call(fn):
+              last_exception = None
+              for _ in range(MAX_ATTEMPTS):
+                  try:
+                      return fn()
+                  except Exception as e:
+                      last_exception = e
+                      time.sleep(WAIT_SECONDS)
+              raise last_exception
+
+
+          def attach_policies(role_name, policy_arns):
+              for policy_arn in policy_arns:
+                  execute_retryable_call(lambda: iam_client.attach_role_policy(RoleName=role_name, PolicyArn=policy_arn))
+
+
+          def delete_attach_policies_policy():
+              iam_client.delete_role_policy(RoleName=ATTACH_POLICIES_ROLE_NAME, PolicyName=ATTACH_POLICIES_POLICY_NAME)
+
+
+          def delete_function_and_role():
+              lambda_client.delete_function(FunctionName=ATTACH_POLICIES_FUNCTION_NAME)
+              iam_client.delete_role_policy(RoleName=ATTACH_POLICIES_ROLE_NAME, PolicyName=DELETE_RESOURCES_POLICY_NAME)
+              iam_client.delete_role(RoleName=ATTACH_POLICIES_ROLE_NAME)
+
+
+          def lambda_handler(event, context):
+              properties = event["ResourceProperties"]
+              try:
+                  if event["RequestType"] == "Create":
+                      attach_policies(properties["RoleName"], properties["PolicyArns"])
+                      time.sleep(WAIT_SECONDS)
+                      delete_attach_policies_policy()
+                      reason = "Policies Attached"
+                  else:
+                      reason = "No Action Performed"
+                  status = cfnresponse.SUCCESS
+              except Exception as e:
+                  status = cfnresponse.FAILED
+                  reason = str(e)[:500]
+              finally:
+                  cfnresponse.send(event, context, status, {}, reason=reason)
+                  delete_function_and_role()
+      Environment:
+        Variables:
+          role_name:
+            Ref: GblLabMonitoringgblattachpoliciesattachpoliciesrole05A54868
+          attach_policies_policy_name: GblLabMonitoringgblattachpoliciesattachpoliciespolicyC65866EB
+          delete_resource_policy_name: GblLabMonitoringgblattachpoliciesdeleteresourcepolicy338A28A1
+      Handler: index.lambda_handler
+      Role:
+        Fn::GetAtt:
+          - GblLabMonitoringgblattachpoliciesattachpoliciesrole05A54868
+          - Arn
+      Runtime: python3.11
+      Tags:
+        - Key: GblCustomComponent
+          Value: "True"
+        - Key: GblLabMonitoring
+          Value: 1.0.0
+      Timeout: 300
+    DependsOn:
+      - GblLabMonitoringgblattachpoliciesattachpoliciesroleDefaultPolicyB202E53A
+      - GblLabMonitoringgblattachpoliciesattachpoliciesrole05A54868
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/GblLabMonitoring/gbl_attach_policies/attach_policies_function/Resource
+  GblLabMonitoringgblattachpoliciesattachpoliciespolicyC65866EB:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action: iam:AttachRolePolicy
+            Condition:
+              ArnLike:
+                iam:PolicyARN:
+                  Ref: GblLabMonitoringmanagedattachrolepolicy1699DB39
+            Effect: Allow
+            Resource:
+              Fn::Join:
+                - ""
+                - - arn:aws:iam::*:role/
+                  - Ref: LabUserRoleName
+        Version: "2012-10-17"
+      PolicyName: GblLabMonitoringgblattachpoliciesattachpoliciespolicyC65866EB
+      Roles:
+        - Ref: GblLabMonitoringgblattachpoliciesattachpoliciesrole05A54868
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/GblLabMonitoring/gbl_attach_policies/attach_policies_policy/Resource
+  GblLabMonitoringgblattachpoliciesdeleteresourcepolicy338A28A1:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - iam:DeleteRole
+              - iam:DeleteRolePolicy
+            Effect: Allow
+            Resource:
+              Fn::GetAtt:
+                - GblLabMonitoringgblattachpoliciesattachpoliciesrole05A54868
+                - Arn
+          - Action: lambda:DeleteFunction
+            Effect: Allow
+            Resource:
+              Fn::GetAtt:
+                - GblLabMonitoringgblattachpoliciesattachpoliciesfunctionB8497992
+                - Arn
+        Version: "2012-10-17"
+      PolicyName: GblLabMonitoringgblattachpoliciesdeleteresourcepolicy338A28A1
+      Roles:
+        - Ref: GblLabMonitoringgblattachpoliciesattachpoliciesrole05A54868
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/GblLabMonitoring/gbl_attach_policies/delete_resource_policy/Resource
+  GblLabMonitoringgblattachpoliciesattachpoliciescustomresource9225376F:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken:
+        Fn::GetAtt:
+          - GblLabMonitoringgblattachpoliciesattachpoliciesfunctionB8497992
+          - Arn
+      RoleName:
+        Ref: LabUserRoleName
+      PolicyArns:
+        - Ref: GblLabMonitoringmanagedattachrolepolicy1699DB39
+    DependsOn:
+      - GblLabMonitoringgblattachpoliciesattachpoliciesfunctionB8497992
+      - GblLabMonitoringmanagedattachrolepolicy1699DB39
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/GblLabMonitoring/gbl_attach_policies/attach_policies_custom_resource/Default
+  CDKMetadata:
+    Type: AWS::CDK::Metadata
+    Properties:
+      Analytics: v2:deflate64:H4sIAAAAAAAA/32SQYvbMBCFf8veFbXJLoUeE9MugXQxSdhrGctjR408MtIoIQj/92Irsb1b6GnefPMsPQ1eyeXLN/n1Ca5+ocrzwuhCxgODOgu4+t/RP8u4CeqMvAGPIkmRVXRXqeTWaHWbcOo7YaApSpAxqyhH12jvtSXxM5DiXmQVPXQnUK1kfG9VT9/zTOShMFodQkHpwkntbWA8QmFw4hNbe2+VhscFw6AXP7Z5X96AX4HxCjeRO30BxungLTE6wtGQkty7NTOoU4PE4oAqOM23V2dDO2T4L9hS7dB7sYNA6nTEpjWQMn0knTC29jLubD0e9NCd0NDIuLfp0UOdtn5XW/IMpDB3ttLJ+Bn9AoIay+nTD6ATaMCzVsZCWYABUprqy0rGddsarYat7iyUm2GGLkWc9XOf9ox09zz0bH4EVyOPL521nYDA1iswmmoZ14HtITWj+zPrBF6Q2Mt+OcFgN2wJvQ1OoRhFVlEWPNtmTnJw0CD3Sf+ZZZZKnX7Q/MYnS1+e5XIpvz/98VovXCDWDcp9qn8BHSd1L00DAAA=
+    Metadata:
+      aws:cdk:path: CdkLab1e434b68Stack/CDKMetadata/Default
+    Condition: CDKMetadataAvailable
+Parameters:
+  SsmParameterValueawsserviceamiamazonlinuxlatestal2023amikernel61x8664C96584B6F00A464EAD1953AFF4B05118Parameter:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-6.1-x86_64
+  LabResourcesBucket:
+    Type: String
+  LabResourcesBucketKeyPrefix:
+    Type: String
+  LabPoolId:
+    Type: String
+  LabUserRoleName:
+    Type: String
+Conditions:
+  CDKMetadataAvailable:
+    Fn::Or:
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - af-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-east-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-northeast-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-northeast-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-southeast-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-southeast-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ca-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - cn-north-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - cn-northwest-1
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-north-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-west-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-west-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-west-3
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - il-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - me-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - me-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - sa-east-1
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-east-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-east-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-west-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-west-2
+

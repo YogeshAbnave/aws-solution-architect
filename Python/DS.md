@@ -2141,3 +2141,80 @@ def remove_words_with_e(words):
 
 ---
 
+# reverse list
+
+list = [ 1,5,64,2,5,78,3,14,6]
+
+def getData(value):
+    n = len(value)
+    for i in range(n // 2):
+        
+        print(i)
+        value[i],value[n-i-1] = value[n-i-1], value[i]
+        
+    print(value)
+
+print(getData(list))   
+
+
+# sort list
+
+list = [ 1,5,64,2,5,78,3,14,6]
+
+def getData(value):
+    n = len(value)
+    for i in range(n):
+        # print(i)
+        for j in range(n - i -1):
+            if value[j] > value[j + 1]:
+                
+                value[j],value[j+1]= value[j+1],value[j]
+    
+    print(value)
+    
+print(getData(list)) 
+
+
+# palandrom
+
+def search(val):
+    longest = []
+    for word in range(len(val)-1,-1,-1):
+        longest.append(val[word])
+        
+        if val == ''.join(longest):
+            print("its palanddrom")
+        else:
+            print("its not plandrom")
+        
+print(search("abcddcbaw")    )
+
+# vovol
+
+
+def vovoleCount(text):
+    vovol = "aeiouAEIOU"
+    count = 0
+    for i in text:
+        
+        if i in vovol:
+            count +=1
+    return count 
+    
+print(vovoleCount("Yogesh Abnave"))  
+
+# count words
+
+def countWords(val):
+    count = 0
+    frozon = {}
+    for i in val:
+        count += len(i)
+        if i in frozon:
+            frozon[i] += 1
+        else:
+            frozon[i] = 1
+        print(frozon)
+    return count    
+
+print(countWords(["Yogeshbanve","ramesh","ramesh"]))  
