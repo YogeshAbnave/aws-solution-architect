@@ -288,10 +288,1021 @@ These adjustments help to **improve cluster performance and avoid bottlenecks** 
 
 -----
 
-Would you like this saved as a `.md` file or exported to PDF?
+
+# 🚀 Complete Enterprise Hadoop Cluster Deployment Guide
+## From Basic Setup to Advanced Security Implementation
+
+This comprehensive guide provides a complete walkthrough for deploying Hadoop clusters on AWS, from basic setups to enterprise-grade secure implementations with Active Directory integration.
+
+---
+
+## 📋 Table of Contents
+
+1. [Architecture Overview](#architecture-overview)
+2. [Prerequisites & Planning](#prerequisites--planning)
+3. [Basic Cluster Setup](#basic-cluster-setup)
+4. [Enterprise Security Implementation](#enterprise-security-implementation)
+5. [High Availability Configuration](#high-availability-configuration)
+6. [Storage Integration](#storage-integration)
+7. [Monitoring & Maintenance](#monitoring--maintenance)
+8. [Troubleshooting](#troubleshooting)
+
+---
+
+## 🏗️ Architecture Overview
+
+### Basic Architecture
+```
+┌─────────────────────────────────────────────────┐
+│                AWS VPC                          │
+│  ┌─────────────┐  ┌─────────────┐  ┌──────────┐ │
+│  │  Master     │  │  Worker     │  │  Worker  │ │
+│  │  Node       │  │  Node 1     │  │  Node 2  │ │
+│  │ (NameNode)  │  │ (DataNode)  │  │(DataNode)│ │
+│  │ Cloudera Mgr│  │             │  │          │ │
+│  └─────────────┘  └─────────────┘  └──────────┘ │
+│         │                │              │       │
+│  ┌─────────────┐  ┌─────────────┐       │       │
+│  │   MySQL     │  │   NAT       │       │       │
+│  │  Database   │  │  Gateway    │       │       │
+│  └─────────────┘  └─────────────┘       │       │
+│         │                │              │       │
+│  ┌─────────────────────────────────────────────┐ │
+│  │              S3 Storage                    │ │
+│  └─────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────┘
+```
+
+### Enterprise Security Architecture
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    SPINE NETWORK ROUTER                     │
+└─────────────────────┬───────────────────┬───────────────────┘
+                      │                   │
+              ┌───────▼──────┐    ┌───────▼──────┐    ┌───────▼──────┐
+              │     AZ-1     │    │     AZ-2     │    │     AZ-3     │
+              │              │    │              │    │              │
+              │ ┌──────────┐ │    │ ┌──────────┐ │    │ ┌──────────┐ │
+              │ │NameNode  │ │    │ │DataNode  │ │    │ │DataNode  │ │
+              │ │Cloudera  │ │    │ │Worker    │ │    │ │Worker    │ │
+              │ │Manager   │ │    │ │Node      │ │    │ │Node      │ │
+              │ │KDC       │ │    │ │          │ │    │ │          │ │
+              │ └──────────┘ │    │ └──────────┘ │    │ └──────────┘ │
+              └──────────────┘    └──────────────┘    └──────────────┘
+                      │                   │                   │
+                      └───────────────────┼───────────────────┘
+                                          │
+                              ┌───────────▼──────────┐
+                              │   Active Directory   │
+                              │   Kerberos KDC      │
+                              │ HADOOPSECURITY.LOCAL │
+                              └─────────────────────┘
+```
+
+---
+
+## 📋 Prerequisites & Planning
+
+### 🛠️ System Requirements
+
+| Component | Minimum Specs | Recommended Specs |
+|-----------|---------------|-------------------|
+| **Master Node** | 8GB RAM, 50GB Disk | 16GB RAM, 120GB Disk |
+| **Worker Nodes** | 8GB RAM, 100GB Disk | 16GB RAM, 200GB Disk |
+| **Instance Type** | t3.medium | t3.large or m4.xlarge |
+| **Operating System** | RHEL/CentOS 7+ | RHEL/CentOS 8+ |
+
+### 🌐 Network Planning
+
+- **VPC CIDR**: 10.0.0.0/16
+- **Public Subnet**: 10.0.1.0/24 (NAT Gateway)
+- **Private Subnet**: 10.0.2.0/24 (Cluster nodes)
+- **Security Groups**: Custom rules for Hadoop ports
+- **Multi-AZ**: Deploy across 3 availability zones for HA
+
+### 🔑 Access Requirements
+
+- AWS Account with appropriate permissions
+- SSH key pair for EC2 access
+- Domain name for enterprise setup (optional)
+- SSL certificates for production
+
+---
+
+## 🚀 Basic Cluster Setup
+
+### Step 1: AWS Infrastructure Setup
+
+#### Launch EC2 Instances
+
+```bash
+# Configure AWS CLI
+aws configure
+# Enter your Access Key, Secret Key, and Region (e.g., ap-south-1)
+```
+
+**Instance Configuration:**
+- **Master Node**: 1 instance (t3.large, 16GB RAM, 120GB disk)
+- **Worker Nodes**: 2-3 instances (t3.large, 16GB RAM, 200GB disk)
+- **Security Group**: Allow ports 22, 7180, 8020, 50070, 8088
+
+#### Create NAT Gateway
+
+```bash
+# Create NAT Gateway for private subnet internet access
+aws ec2 create-nat-gateway \
+  --subnet-id subnet-12345678 \
+  --allocation-id eipalloc-12345678
+```
+
+#### SSH Connection Script
+
+Create `connectoid_multi.sh`:
+
+```bash
+#!/bin/bash
+KEY_PATH="/path/to/your/security.pem"
+REGION="ap-south-1"
+
+echo "Available EC2 Instances:"
+aws ec2 describe-instances \
+  --region "$REGION" \
+  --filters Name=instance-state-name,Values=running \
+  --query 'Reservations[*].Instances[*].[InstanceId, Tags[?Key==`Name`]|[0].Value, PublicIpAddress]' \
+  --output table
+
+read -p "Enter the IP address to connect: " IP
+ssh -i "$KEY_PATH" ec2-user@$IP
+```
+
+### Step 2: System Preparation
+
+#### Update and Configure All Nodes
+
+```bash
+# Run on all nodes
+sudo yum update -y
+sudo yum install -y wget curl vim net-tools
+
+# Disable SELinux
+sudo setenforce 0
+sudo sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config
+
+# Configure hostname resolution
+sudo nano /etc/hosts
+# Add all cluster nodes:
+# 10.0.2.10 master.cluster.local master
+# 10.0.2.11 worker1.cluster.local worker1
+# 10.0.2.12 worker2.cluster.local worker2
+
+# Set hostname
+sudo hostnamectl set-hostname master.cluster.local
+```
+
+#### Configure NTP Synchronization
+
+```bash
+# Install and configure NTP
+sudo yum install -y ntp
+sudo systemctl enable ntpd
+sudo systemctl start ntpd
+
+# Verify time sync
+ntpq -p
+```
+
+### Step 3: MySQL Database Setup
+
+#### Install MySQL 8
+
+```bash
+# On master node
+sudo yum install -y mysql-server
+sudo systemctl enable mysqld
+sudo systemctl start mysqld
+
+# Get temporary root password
+sudo grep 'temporary password' /var/log/mysqld.log
+```
+
+#### Secure MySQL Installation
+
+```bash
+# Run secure installation
+sudo mysql_secure_installation
+
+# Login to MySQL
+mysql -u root -p
+```
+
+#### Create Cloudera Databases
+
+```sql
+-- Set password policy (if needed)
+SET GLOBAL validate_password.policy=LOW;
+
+-- Create databases and users for Cloudera services
+CREATE DATABASE scm DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;
+CREATE USER 'scm'@'%' IDENTIFIED BY 'P@ssw0rd123';
+GRANT ALL ON scm.* TO 'scm'@'%';
+
+CREATE DATABASE amon DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;
+CREATE USER 'amon'@'%' IDENTIFIED BY 'P@ssw0rd123';
+GRANT ALL ON amon.* TO 'amon'@'%';
+
+CREATE DATABASE rman DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;
+CREATE USER 'rman'@'%' IDENTIFIED BY 'P@ssw0rd123';
+GRANT ALL ON rman.* TO 'rman'@'%';
+
+CREATE DATABASE hue DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;
+CREATE USER 'hue'@'%' IDENTIFIED BY 'P@ssw0rd123';
+GRANT ALL ON hue.* TO 'hue'@'%';
+
+CREATE DATABASE metastore DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;
+CREATE USER 'hive'@'%' IDENTIFIED BY 'P@ssw0rd123';
+GRANT ALL ON metastore.* TO 'hive'@'%';
+
+CREATE DATABASE sentry DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;
+CREATE USER 'sentry'@'%' IDENTIFIED BY 'P@ssw0rd123';
+GRANT ALL ON sentry.* TO 'sentry'@'%';
+
+CREATE DATABASE nav DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;
+CREATE USER 'nav'@'%' IDENTIFIED BY 'P@ssw0rd123';
+GRANT ALL ON nav.* TO 'nav'@'%';
+
+CREATE DATABASE navms DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;
+CREATE USER 'navms'@'%' IDENTIFIED BY 'P@ssw0rd123';
+GRANT ALL ON navms.* TO 'navms'@'%';
+
+CREATE DATABASE oozie DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;
+CREATE USER 'oozie'@'%' IDENTIFIED BY 'P@ssw0rd123';
+GRANT ALL ON oozie.* TO 'oozie'@'%';
+
+FLUSH PRIVILEGES;
+EXIT;
+```
+
+### Step 4: Install Cloudera Manager
+
+#### Download and Install Cloudera Manager
+
+```bash
+# Download Cloudera Manager repository file
+sudo wget https://archive.cloudera.com/cm6/6.3.3/redhat7/yum/cloudera-manager.repo \
+  -P /etc/yum.repos.d/
+
+# Import GPG key
+sudo rpm --import https://archive.cloudera.com/cm6/6.3.3/redhat7/yum/RPM-GPG-KEY-cloudera
+
+# Install Cloudera Manager Server and Agent
+sudo yum install -y cloudera-manager-daemons cloudera-manager-agent cloudera-manager-server
+```
+
+#### Install MySQL JDBC Driver
+
+```bash
+# Download MySQL JDBC driver
+wget https://dev.mysql.com/get/Downloads/Connector-J/mysql-connector-java-8.0.33.tar.gz
+tar -xzf mysql-connector-java-8.0.33.tar.gz
+
+# Copy to Cloudera Manager
+sudo cp mysql-connector-java-8.0.33/mysql-connector-java-8.0.33.jar /usr/share/java/mysql-connector-java.jar
+sudo chmod 644 /usr/share/java/mysql-connector-java.jar
+```
+
+#### Initialize Cloudera Manager Database
+
+```bash
+# Prepare database
+sudo /opt/cloudera/cm/schema/scm_prepare_database.sh mysql scm scm P@ssw0rd123
+```
+
+#### Start Cloudera Manager Services
+
+```bash
+# Start Cloudera Manager Server
+sudo systemctl enable cloudera-scm-server
+sudo systemctl start cloudera-scm-server
+
+# Monitor startup (takes 2-3 minutes)
+sudo tail -f /var/log/cloudera-scm-server/cloudera-scm-server.log
+
+# Install agent on all nodes
+sudo systemctl enable cloudera-scm-agent
+sudo systemctl start cloudera-scm-agent
+```
+
+### Step 5: Cluster Configuration via Web UI
+
+#### Access Cloudera Manager
+
+1. Open browser: `http://master-node-ip:7180`
+2. Login: admin/admin
+3. Change default password
+
+#### Add Hosts
+
+1. **Specify Hosts**: Enter IP addresses or hostnames of all nodes
+2. **Select Repository**: Choose CDH version (6.3.3 recommended)
+3. **Accept JDK License**: Install Oracle JDK
+4. **Single User Mode**: Use root or create cloudera-scm user
+5. **Install Agents**: Wait for installation completion
+
+#### Install CDH Services
+
+**Core Services to Install:**
+- HDFS (Hadoop Distributed File System)
+- YARN (Resource Manager)
+- ZooKeeper
+- Hive
+- Impala
+- Spark
+- HBase (optional)
+- Kafka (optional)
+
+**Service Configuration:**
+1. **Database Configuration**: Use MySQL databases created earlier
+2. **Directory Configuration**: Accept defaults or customize
+3. **Review Changes**: Verify all configurations
+4. **First Run**: Initialize and start all services
+
+---
+
+## 🔐 Enterprise Security Implementation
+
+### Step 1: Active Directory Integration
+
+#### Windows Server AD Setup
+
+```powershell
+# On Windows Server - Install AD Domain Services
+Install-WindowsFeature -Name AD-Domain-Services -IncludeManagementTools
+
+# Promote to Domain Controller
+Install-ADDSForest -DomainName "HADOOPSECURITY.LOCAL" -SafeModeAdministratorPassword (ConvertTo-SecureString "P@ssw0rd123" -AsPlainText -Force)
+```
+
+#### Configure Kerberos KDC
+
+```bash
+# Install Kerberos server packages
+sudo yum install -y krb5-server krb5-libs krb5-workstation
+
+# Configure /etc/krb5.conf
+sudo tee /etc/krb5.conf > /dev/null <<EOF
+[libdefaults]
+default_realm = HADOOPSECURITY.LOCAL
+dns_lookup_realm = true
+dns_lookup_kdc = true
+ticket_lifetime = 24h
+renew_lifetime = 7d
+forwardable = true
+rdns = false
+default_ccache_name = KEYRING:persistent:%{uid}
+
+[realms]
+HADOOPSECURITY.LOCAL = {
+  kdc = hadoop-ad.hadoopsecurity.local
+  admin_server = hadoop-ad.hadoopsecurity.local
+  default_domain = hadoopsecurity.local
+}
+
+[domain_realm]
+.hadoopsecurity.local = HADOOPSECURITY.LOCAL
+hadoopsecurity.local = HADOOPSECURITY.LOCAL
+EOF
+```
+
+#### Initialize Kerberos Database
+
+```bash
+# Create KDC database
+sudo kdb5_util create -s -r HADOOPSECURITY.LOCAL
+
+# Configure KDC
+sudo tee /var/kerberos/krb5kdc/kdc.conf > /dev/null <<EOF
+[kdcdefaults]
+kdc_ports = 88
+kdc_tcp_ports = 88
+
+[realms]
+HADOOPSECURITY.LOCAL = {
+  acl_file = /var/kerberos/krb5kdc/kadm5.acl
+  dict_file = /usr/share/dict/words
+  admin_keytab = /var/kerberos/krb5kdc/kadm5.keytab
+  supported_enctypes = aes256-cts:normal aes128-cts:normal des3-hmac-sha1:normal arcfour-hmac:normal camellia256-cts:normal camellia128-cts:normal des-hmac-sha1:normal des-cbc-md5:normal des-cbc-crc:normal
+}
+EOF
+
+# Configure ACL
+sudo tee /var/kerberos/krb5kdc/kadm5.acl > /dev/null <<EOF
+*/admin@HADOOPSECURITY.LOCAL    *
+cloudera-scm@HADOOPSECURITY.LOCAL *
+EOF
+
+# Start Kerberos services
+sudo systemctl enable krb5kdc
+sudo systemctl enable kadmin
+sudo systemctl start krb5kdc
+sudo systemctl start kadmin
+```
+
+### Step 2: Cloudera Manager Kerberos Integration
+
+#### Enable Kerberos in Cloudera Manager
+
+1. **Administration** > **Security** > **Enable Kerberos**
+2. **KDC Type**: Select "Active Directory"
+3. **KDC Server Host**: hadoop-ad.hadoopsecurity.local
+4. **Kerberos Security Realm**: HADOOPSECURITY.LOCAL
+5. **KDC Account Manager Credentials**: Provide AD admin credentials
+
+#### Create Service Principal
+
+```bash
+# Create cloudera-scm principal
+kadmin.local -q "addprinc -pw P@ssw0rd123 cloudera-scm@HADOOPSECURITY.LOCAL"
+
+# Create HTTP principal for web UIs
+kadmin.local -q "addprinc -pw P@ssw0rd123 HTTP/master.hadoopsecurity.local@HADOOPSECURITY.LOCAL"
+```
+
+### Step 3: TLS/SSL Configuration
+
+#### Generate SSL Certificates
+
+```bash
+# Create certificate directory
+sudo mkdir -p /opt/cloudera/security/pki
+cd /opt/cloudera/security/pki
+
+# Generate CA private key
+sudo openssl genrsa -out ca-key.pem 4096
+
+# Generate CA certificate
+sudo openssl req -new -x509 -days 365 -key ca-key.pem -sha256 -out ca.pem -subj "/C=US/ST=CA/L=SanFrancisco/O=Cloudera/CN=ClusterCA"
+
+# Generate server private key
+sudo openssl genrsa -out server-key.pem 4096
+
+# Generate server certificate signing request
+sudo openssl req -subj "/CN=*.hadoopsecurity.local" -sha256 -new -key server-key.pem -out server.csr
+
+# Generate server certificate
+sudo openssl x509 -req -days 365 -sha256 -in server.csr -CA ca.pem -CAkey ca-key.pem -out server-cert.pem -CAcreateserial
+
+# Set permissions
+sudo chmod 400 ca-key.pem server-key.pem
+sudo chmod 444 ca.pem server-cert.pem
+```
+
+#### Enable Auto-TLS in Cloudera Manager
+
+1. **Administration** > **Security** > **Enable Auto-TLS**
+2. Choose **Use Root CA**
+3. Provide CA certificate and key paths
+4. **Restart Cluster** after enabling
+
+### Step 4: Network Security
+
+#### Configure Firewall Rules
+
+```bash
+# Configure iptables for secure communication
+sudo iptables -A INPUT -p tcp --dport 88 -j ACCEPT    # Kerberos
+sudo iptables -A INPUT -p tcp --dport 464 -j ACCEPT   # Kerberos admin
+sudo iptables -A INPUT -p tcp --dport 7180 -j ACCEPT  # Cloudera Manager
+sudo iptables -A INPUT -p tcp --dport 8020 -j ACCEPT  # HDFS NameNode
+sudo iptables -A INPUT -p tcp --dport 50070 -j ACCEPT # HDFS Web UI
+sudo iptables -A INPUT -p tcp --dport 8088 -j ACCEPT  # YARN ResourceManager
+sudo iptables -A INPUT -p tcp --dport 19888 -j ACCEPT # MapReduce JobHistory
+
+# Save rules
+sudo service iptables save
+```
+
+#### Install Network Monitoring
+
+```bash
+# Install Wireshark for network monitoring
+sudo yum install -y wireshark-gnome
+
+# Monitor network traffic
+sudo dumpcap -i eth0 -w /tmp/network-capture.pcap
+
+# Analyze captured packets
+wireshark /tmp/network-capture.pcap
+```
+
+---
+
+## ⚡ High Availability Configuration
+
+### Step 1: HDFS NameNode HA
+
+#### Prerequisites
+
+- **Minimum 3 nodes** for proper quorum
+- **Shared storage** or **JournalNodes** for edit logs
+- **Automatic failover** with ZooKeeper
+
+#### Configure JournalNodes
+
+```bash
+# Install and configure JournalNodes on 3 separate nodes
+# In Cloudera Manager:
+# 1. HDFS > Actions > Enable High Availability
+# 2. Select JournalNode hosts (odd number, minimum 3)
+# 3. Configure shared edits directory
+# 4. Enable automatic failover with ZooKeeper
+```
+
+#### Verify HA Configuration
+
+```bash
+# Check NameNode status
+sudo su - hdfs
+hdfs haadmin -getServiceState nn1
+hdfs haadmin -getServiceState nn2
+
+# Test failover
+hdfs haadmin -failover nn1 nn2
+```
+
+### Step 2: YARN ResourceManager HA
+
+```bash
+# Enable YARN HA in Cloudera Manager
+# 1. YARN > Actions > Enable High Availability
+# 2. Select additional ResourceManager host
+# 3. Configure ZooKeeper for coordination
+# 4. Restart YARN service
+```
+
+### Step 3: Hive Metastore HA
+
+```bash
+# Configure multiple Hive Metastore instances
+# 1. Hive > Instances > Add Role Instances
+# 2. Add Hive Metastore Server on additional hosts
+# 3. Configure load balancing
+# 4. Update Hive clients configuration
+```
+
+---
+
+## 💾 Storage Integration
+
+### Step 1: S3 Integration
+
+#### Configure S3 Access
+
+```bash
+# Install AWS CLI on all nodes
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
+
+# Configure AWS credentials
+aws configure
+```
+
+#### Update Hadoop Configuration
+
+Add to `/etc/hadoop/conf/core-site.xml`:
+
+```xml
+<configuration>
+  <property>
+    <name>fs.s3a.access.key</name>
+    <value>YOUR_ACCESS_KEY</value>
+  </property>
+  <property>
+    <name>fs.s3a.secret.key</name>
+    <value>YOUR_SECRET_KEY</value>
+  </property>
+  <property>
+    <name>fs.s3a.endpoint</name>
+    <value>s3.ap-south-1.amazonaws.com</value>
+  </property>
+  <property>
+    <name>fs.s3a.impl</name>
+    <value>org.apache.hadoop.fs.s3a.S3AFileSystem</value>
+  </property>
+  <property>
+    <name>fs.s3a.fast.upload</name>
+    <value>true</value>
+  </property>
+</configuration>
+```
+
+#### Test S3 Connectivity
+
+```bash
+# Test S3 access
+hdfs dfs -ls s3a://your-bucket-name/
+
+# Copy data to S3
+hdfs dfs -cp /user/data/sample.txt s3a://your-bucket-name/
+
+# Copy data from S3
+hdfs dfs -cp s3a://your-bucket-name/sample.txt /user/data/
+```
+
+### Step 2: EBS Volume Management
+
+#### Create and Attach EBS Volumes
+
+```bash
+# Create EBS volume
+aws ec2 create-volume --size 100 --region ap-south-1 --availability-zone ap-south-1a --volume-type gp3
+
+# Attach volume to instance
+aws ec2 attach-volume --volume-id vol-12345678 --instance-id i-12345678 --device /dev/sdf
+```
+
+#### Format and Mount EBS Volumes
+
+```bash
+# Format new volume
+sudo mkfs -t ext4 /dev/xvdf
+
+# Create mount point
+sudo mkdir /data1
+
+# Mount volume
+sudo mount /dev/xvdf /data1
+
+# Add to fstab for persistent mounting
+echo '/dev/xvdf /data1 ext4 defaults,nofail 0 2' | sudo tee -a /etc/fstab
+
+# Set permissions
+sudo chown -R hdfs:hdfs /data1
+sudo chmod 755 /data1
+```
+
+---
+
+## 📊 Monitoring & Maintenance
+
+### Step 1: Cloudera Manager Monitoring
+
+#### Configure Alerts
+
+1. **Administration** > **Alerts**
+2. **Create Alert**: Set thresholds for:
+   - CPU usage > 80%
+   - Memory usage > 85%
+   - Disk usage > 90%
+   - HDFS health issues
+   - Service failures
+
+#### Health Checks
+
+```bash
+# Check cluster health
+curl -u admin:password http://master:7180/api/v14/clusters/cluster/services
+
+# Check HDFS health
+hdfs fsck / -files -blocks -locations
+
+# Check YARN applications
+yarn application -list
+
+# Check service status
+sudo systemctl status cloudera-scm-server
+sudo systemctl status cloudera-scm-agent
+```
+
+### Step 2: Performance Monitoring
+
+#### Install Additional Monitoring Tools
+
+```bash
+# Install htop for system monitoring
+sudo yum install -y htop
+
+# Install iotop for I/O monitoring
+sudo yum install -y iotop
+
+# Install nethogs for network monitoring
+sudo yum install -y nethogs
+```
+
+#### Custom Monitoring Scripts
+
+Create `/opt/scripts/cluster-health.sh`:
+
+```bash
+#!/bin/bash
+# Cluster Health Check Script
+
+LOG_FILE="/var/log/cluster-health.log"
+DATE=$(date '+%Y-%m-%d %H:%M:%S')
+
+echo "[$DATE] Starting cluster health check" >> $LOG_FILE
+
+# Check HDFS
+HDFS_HEALTH=$(hdfs dfsadmin -report | grep "Live datanodes" | awk '{print $3}')
+echo "[$DATE] HDFS Live DataNodes: $HDFS_HEALTH" >> $LOG_FILE
+
+# Check YARN
+YARN_NODES=$(yarn node -list | grep RUNNING | wc -l)
+echo "[$DATE] YARN Running Nodes: $YARN_NODES" >> $LOG_FILE
+
+# Check disk usage
+DISK_USAGE=$(df -h / | tail -1 | awk '{print $5}' | sed 's/%//')
+if [ $DISK_USAGE -gt 90 ]; then
+    echo "[$DATE] WARNING: Disk usage is ${DISK_USAGE}%" >> $LOG_FILE
+fi
+
+# Check memory usage
+MEM_USAGE=$(free | grep Mem | awk '{printf("%.2f"), $3/$2*100}')
+echo "[$DATE] Memory usage: ${MEM_USAGE}%" >> $LOG_FILE
+
+echo "[$DATE] Health check completed" >> $LOG_FILE
+```
+
+### Step 3: Backup and Recovery
+
+#### HDFS Backup Strategy
+
+```bash
+# Create backup directory
+hdfs dfs -mkdir /backup
+
+# Backup critical data
+hdfs dfs -cp /user/data/* /backup/
+
+# Export to S3 for off-site backup
+hadoop distcp /backup s3a://backup-bucket/hdfs-backup/$(date +%Y%m%d)
+```
+
+#### MySQL Database Backup
+
+```bash
+# Create backup script
+cat > /opt/scripts/mysql-backup.sh << 'EOF'
+#!/bin/bash
+BACKUP_DIR="/opt/backups/mysql"
+DATE=$(date +%Y%m%d_%H%M%S)
+
+mkdir -p $BACKUP_DIR
+
+# Backup all Cloudera databases
+mysqldump -u root -p --all-databases > $BACKUP_DIR/cloudera_backup_$DATE.sql
+
+# Compress backup
+gzip $BACKUP_DIR/cloudera_backup_$DATE.sql
+
+# Keep only last 7 days of backups
+find $BACKUP_DIR -name "*.gz" -mtime +7 -delete
+
+echo "Backup completed: cloudera_backup_$DATE.sql.gz"
+EOF
+
+chmod +x /opt/scripts/mysql-backup.sh
+
+# Schedule daily backup
+echo "0 2 * * * /opt/scripts/mysql-backup.sh" | crontab -
+```
+
+---
+
+## 🔧 User Management & Access Control
+
+### Step 1: Create Hadoop Users
+
+```bash
+# Create system users
+sudo useradd -m -s /bin/bash analyst1
+sudo useradd -m -s /bin/bash developer1
+sudo useradd -m -s /bin/bash admin1
+
+# Set passwords
+sudo passwd analyst1
+sudo passwd developer1
+sudo passwd admin1
+
+# Create HDFS directories
+sudo su - hdfs
+hdfs dfs -mkdir /user/analyst1
+hdfs dfs -mkdir /user/developer1
+hdfs dfs -mkdir /user/admin1
+
+# Set ownership
+hdfs dfs -chown analyst1:analyst1 /user/analyst1
+hdfs dfs -chown developer1:developer1 /user/developer1
+hdfs dfs -chown admin1:admin1 /user/admin1
+
+# Set permissions
+hdfs dfs -chmod 755 /user/analyst1
+hdfs dfs -chmod 755 /user/developer1
+hdfs dfs -chmod 755 /user/admin1
+```
+
+### Step 2: Configure Ranger (Optional)
+
+```bash
+# Install Ranger through Cloudera Manager
+# 1. Add Service > Ranger
+# 2. Configure Ranger Admin Database
+# 3. Configure Ranger UserSync
+# 4. Enable Ranger plugins for HDFS, Hive, HBase
+```
+
+### Step 3: Implement Sentry Policies
+
+```sql
+-- Create Sentry roles
+CREATE ROLE analyst_role;
+CREATE ROLE developer_role;
+CREATE ROLE admin_role;
+
+-- Grant privileges
+GRANT ALL ON DATABASE default TO ROLE admin_role;
+GRANT SELECT ON DATABASE default TO ROLE analyst_role;
+GRANT ALL ON DATABASE development TO ROLE developer_role;
+
+-- Assign roles to groups
+GRANT ROLE analyst_role TO GROUP analysts;
+GRANT ROLE developer_role TO GROUP developers;
+GRANT ROLE admin_role TO GROUP admins;
+```
+
+---
 
 
+---
 
+````markdown
+# 🛠️ Cloudera & Hadoop Troubleshooting and Backup Guide
+
+---
+
+## 🔍 Troubleshooting Guide
+
+### 🔧 Common Issues and Solutions
+
+---
+
+### 1️⃣ Cloudera Manager Not Starting
+
+```bash
+# Check logs for detailed error
+sudo tail -f /var/log/cloudera-scm-server/cloudera-scm-server.log
+
+# Ensure proper ownership
+sudo chown -R cloudera-scm:cloudera-scm /var/lib/cloudera-scm-server
+
+# Restart service
+sudo systemctl restart cloudera-scm-server
+
+# (Optional) Re-prepare database if needed
+sudo /opt/cloudera/cm/schema/scm_prepare_database.sh mysql scm scm P@ssw0rd123!
+````
+
+---
+
+### 2️⃣ HDFS Safe Mode Issues
+
+```bash
+# Check safemode status
+hdfs dfsadmin -safemode get
+
+# Exit safemode (use with caution)
+hdfs dfsadmin -safemode leave
+
+# Run filesystem check
+hdfs fsck / -files -blocks -locations
+```
+
+---
+
+### 3️⃣ Kerberos Authentication Failures
+
+```bash
+# View Kerberos ticket
+klist
+
+# Renew ticket
+kinit -R
+
+# Verify system time is in sync
+ntpstat  # OR
+ntpdate -s time.nist.gov
+
+# Check keytab file
+klist -k /etc/security/keytabs/hdfs.keytab
+```
+
+---
+
+### 4️⃣ Performance Issues
+
+```bash
+# View YARN node status and applications
+yarn node -list
+yarn application -list
+
+# Monitor disk I/O
+iotop
+
+# Check network connection on important ports
+netstat -tuln | grep :8020
+
+# List running Java processes
+jps
+```
+
+---
+
+### 5️⃣ S3 Connectivity Issues
+
+```bash
+# Check if S3 bucket is accessible
+aws s3 ls s3://your-bucket-name/
+
+# Validate IAM user/role
+aws iam get-user
+aws sts get-caller-identity
+```
+
+---
+
+### 6️⃣ Network Connectivity Problems
+
+```bash
+# Test TCP connection between nodes
+telnet hostname 7180
+nc -zv hostname 8020
+
+# Check firewall rules
+sudo iptables -L
+```
+
+---
+
+## 🔄 Backup and Disaster Recovery
+
+---
+
+### 🖼️ 1. AMI Snapshots (EC2 Backup)
+
+```bash
+# Create an AMI of current instance
+aws ec2 create-image \
+  --instance-id i-1234567890abcdef0 \
+  --name "hadoop-cluster-backup-$(date +%Y%m%d)" \
+  --description "Hadoop cluster backup"
+```
+
+---
+
+### 🗃️ 2. HDFS Backup Strategy
+
+```bash
+# Backup namespace metadata
+hdfs dfsadmin -saveNamespace
+
+# Backup data to S3 using distcp
+hdfs distcp /important/data s3a://backup-bucket/hdfs-backup/$(date +%Y%m%d)/
+```
+
+---
+
+### 🧾 3. Configuration Backup
+
+```bash
+# Export Cloudera Manager cluster service configuration
+curl -X GET -u admin:admin \
+"http://localhost:7180/api/v19/clusters/cluster/services" > cm_config_backup.json
+
+# Backup critical system config files
+tar -czf config_backup_$(date +%Y%m%d).tar.gz \
+  /etc/krb5.conf \
+  /etc/hosts \
+  /opt/cloudera/parcels/CDH/etc/hadoop/conf.dist/
+```
+
+---
+
+## ✅ Best Practices
+
+* Keep regular snapshots of EC2 nodes via AMI.
+* Automate HDFS + configuration backups weekly.
+* Set up CloudWatch or a monitoring tool for resource usage.
+* Periodically test disaster recovery to ensure effectiveness.
+* Maintain time synchronization across all nodes (use NTP).
+
+---
+
+```
+
+---
+
+Let me know if you want a downloadable `.md` or `.pdf` version of this document.
+```
 
 
 
