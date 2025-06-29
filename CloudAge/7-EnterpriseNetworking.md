@@ -1,3 +1,6 @@
+# Enterprise Networking
+
+```
 Enterprise Networking
 ├── 1. Network Types and Scopes
 │   ├── University: LAN, WAN, PAN, CAN
@@ -106,8 +109,212 @@ Enterprise Networking
     ├── Manual vs Dynamic Config
     ├── Network Topology
     └── Shielded vs Unshielded Cable
+```
 
 
+# Enterprise Networking
+
+## Architecture Overview
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    ENTERPRISE NETWORK ARCHITECTURE              │
+├─────────────────────────────────────────────────────────────────┤
+│  Application Layer (Layer 7)                                   │
+│  ├── Web Services (HTTP/HTTPS)                                 │
+│  ├── Email (SMTP/POP3/IMAP)                                    │
+│  ├── File Transfer (FTP/SFTP)                                  │
+│  └── Remote Access (SSH/Telnet)                                │
+├─────────────────────────────────────────────────────────────────┤
+│  Presentation Layer (Layer 6)                                  │
+│  ├── Data Encryption/Decryption                                │
+│  ├── Compression                                               │
+│  └── Data Translation                                          │
+├─────────────────────────────────────────────────────────────────┤
+│  Session Layer (Layer 5)                                       │
+│  ├── Session Management                                        │
+│  ├── Authentication                                            │
+│  └── Authorization                                             │
+├─────────────────────────────────────────────────────────────────┤
+│  Transport Layer (Layer 4)                                     │
+│  ├── TCP (Reliable, Connection-oriented)                       │
+│  ├── UDP (Fast, Connectionless)                                │
+│  └── Port Management                                           │
+├─────────────────────────────────────────────────────────────────┤
+│  Network Layer (Layer 3)                                       │
+│  ├── IP Addressing (IPv4/IPv6)                                 │
+│  ├── Routing (Static/Dynamic)                                  │
+│  ├── ICMP (Internet Control Message Protocol)                  │
+│  └── NAT (Network Address Translation)                         │
+├─────────────────────────────────────────────────────────────────┤
+│  Data Link Layer (Layer 2)                                     │
+│  ├── MAC Addressing                                            │
+│  ├── Ethernet Frames                                           │
+│  ├── Switching                                                 │
+│  └── Error Detection                                           │
+├─────────────────────────────────────────────────────────────────┤
+│  Physical Layer (Layer 1)                                      │
+│  ├── Cables (Coaxial, UTP, Fiber)                             │
+│  ├── Wireless (Wi-Fi, Bluetooth)                              │
+│  ├── Hubs and Repeaters                                        │
+│  └── Electrical Signals                                        │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## Physical Network Architecture
+```
+                    ┌─────────────────────────────┐
+                    │         INTERNET            │
+                    └─────────────┬───────────────┘
+                                  │
+                    ┌─────────────▼───────────────┐
+                    │       ISP ROUTER            │
+                    └─────────────┬───────────────┘
+                                  │
+                    ┌─────────────▼───────────────┐
+                    │      ENTERPRISE FIREWALL    │
+                    └─────────────┬───────────────┘
+                                  │
+                    ┌─────────────▼───────────────┐
+                    │       CORE ROUTER           │
+                    └─────────────┬───────────────┘
+                                  │
+        ┌─────────────────────────┼─────────────────────────┐
+        │                         │                         │
+┌───────▼────────┐    ┌───────────▼────────┐    ┌───────────▼────────┐
+│ DISTRIBUTION   │    │   DISTRIBUTION     │    │   DISTRIBUTION     │
+│   SWITCH 1     │    │     SWITCH 2       │    │     SWITCH 3       │
+└───────┬────────┘    └───────────┬────────┘    └───────────┬────────┘
+        │                         │                         │
+┌───────▼────────┐    ┌───────────▼────────┐    ┌───────────▼────────┐
+│  ACCESS        │    │    ACCESS          │    │    ACCESS          │
+│  SWITCH        │    │    SWITCH          │    │    SWITCH          │
+└───────┬────────┘    └───────────┬────────┘    └───────────┬────────┘
+        │                         │                         │
+   ┌────┴────┐              ┌─────┴─────┐              ┌─────┴─────┐
+   │ DEVICES │              │  DEVICES  │              │  DEVICES  │
+   └─────────┘              └───────────┘              └───────────┘
+```
+
+## Network Topology Architecture
+```
+Internet Cloud
+     │
+     ▼
+┌─────────────┐
+│   Firewall  │ ◄── Security Layer
+└─────────────┘
+     │
+     ▼
+┌─────────────┐
+│   Router    │ ◄── Network Layer (Layer 3)
+└─────────────┘
+     │
+     ▼
+┌─────────────┐
+│   Switch    │ ◄── Data Link Layer (Layer 2)
+└─────────────┘
+     │
+   ┌─┴─┐
+   ▼   ▼
+┌─────┐ ┌─────┐
+│ PC1 │ │ PC2 │ ◄── End Devices
+└─────┘ └─────┘
+```
+
+## 1. Network Fundamentals
+### Network Types and Scopes
+- **LAN (Local Area Network)** - University/Campus networks
+- **WAN (Wide Area Network)** - Geographic distribution
+- **PAN (Personal Area Network)** - Individual device connectivity
+- **CAN (Campus Area Network)** - Multi-building networks
+- **Internet** - Global network infrastructure
+- **Intranet** - Private internal networks
+- **Extranet** - Extended private networks
+
+### Network Classifications
+- **Public Networks** - Open access networks
+- **Private Networks** - Restricted access networks
+
+## 2. Network Purpose and Evolution
+### Primary Objective
+- **Information Sharing** - Core purpose of networking
+
+### Historical Context
+- **Floppy Disk Era** - Pre-networking data transfer challenges
+
+### Standardization Bodies
+- **ANSI** (American National Standards Institute)
+- **ISO** (International Organization for Standardization)
+- **IEEE** (Institute of Electrical and Electronics Engineers)
+- **CERN** (European Organization for Nuclear Research)
+
+## 3. Network Infrastructure Components
+
+### Hardware Components
+- **Network Controllers** - Interface management
+- **ISA (Industry Standard Architecture)** - Bus standard
+- **Network Adapters** - Device connectivity interfaces
+- **PCI (Peripheral Component Interconnect)** - Expansion bus
+
+### Cabling and Physical Media
+- **Coaxial Cable** - Legacy transmission medium
+- **UTP (Unshielded Twisted Pair)** - Standard copper cabling
+- **CAT-5/CAT-5e** - Category 5 Ethernet cables
+- **RJ45 Connectors** - Standard Ethernet connectors
+- **Wireless Technologies** - Radio frequency transmission
+
+### Software Protocols
+- **TCP (Transmission Control Protocol)** - Reliable data transmission
+- **TCP/IP Suite** - Internet protocol stack
+- **UDP (User Datagram Protocol)** - Fast, connectionless protocol
+
+## 4. Network Architecture Models
+
+### OSI Reference Model (7 Layers)
+```
+Layer 7 │ Application  │ HTTP, HTTPS, FTP, SMTP, DNS
+Layer 6 │ Presentation │ SSL/TLS, JPEG, ASCII, Encryption
+Layer 5 │ Session      │ NetBIOS, RPC, SQL Sessions
+Layer 4 │ Transport    │ TCP, UDP, Port Numbers
+Layer 3 │ Network      │ IP, ICMP, OSPF, BGP, Routers
+Layer 2 │ Data Link    │ Ethernet, Wi-Fi, MAC, Switches
+Layer 1 │ Physical     │ Cables, Hubs, Repeaters, Signals
+```
+
+### TCP/IP Model (4 Layers)
+```
+Application Layer    │ HTTP, FTP, SMTP, DNS
+Transport Layer      │ TCP, UDP
+Internet Layer       │ IP, ICMP, ARP
+Network Access Layer │ Ethernet, Wi-Fi, Physical
+```
+
+### Enterprise Network Hierarchy
+```
+Core Layer
+├── High-speed backbone
+├── Redundancy and fault tolerance
+└── Minimal processing overhead
+
+Distribution Layer
+├── Policy enforcement
+├── Security filtering
+├── Inter-VLAN routing
+└── WAN access
+
+Access Layer
+├── End-user connectivity
+├── Port security
+├── VLANs
+└── PoE (Power over Ethernet)
+```
+- **DHCP (Dynamic Host Configuration Protocol)** - Automatic IP assignment
+
+## 5. Data Transmission Methods
+
+### Communication Types
+- **Broadcast** - One-to-all communication
+- **Unicast** - One-to-one
 
 ## 🌐 Enterprise Networking: Node/Tree Hierarchy (Detailed Notes)
 
