@@ -465,1090 +465,1284 @@ wget https://s3.amazonaws.com/cloud-age/generate_logs.py
 ---
 
 
-Certainly! Here is a structured table for each question, including **all options**, the **correct option**, and a **brief description** for each answer:
+# Hive, Hadoop, and Big Data Quiz - Questions 1-60
 
 ---
 
-### 1. According to Cloudera, which file format provides better query performance and compression in Hive?
-- **Options:**  
-  - Avro  
-  - ORC  
-  - Parquet  
-  - TextFile  
-- **Correct Option:** ORC  
-- **Description:** ORC (Optimized Row Columnar) is a columnar storage format that provides high compression and fast query performance, especially in Hive.
+## **Question 1:**
+
+**According to Cloudera, which file format provides better query performance and compression in Hive?**
+
+A) Avro  
+B) ORC  
+C) Parquet  
+D) TextFile  
+
+✅ **Correct Option:** ORC  
+**Description:** ORC (Optimized Row Columnar) is a columnar storage format that provides high compression and fast query performance, especially in Hive.
 
 ---
 
-### 2. Apache Flume is written in:
-- **Options:**  
-  - JavaScript  
-  - Java  
-  - Python  
-  - None of the above  
-- **Correct Option:** Java  
-- **Description:** Flume is developed in Java, making it compatible with the Hadoop ecosystem.
+## **Question 2:**
+
+**Apache Flume is written in:**
+
+A) JavaScript  
+B) Java  
+C) Python  
+D) None of the above  
+
+✅ **Correct Option:** Java  
+**Description:** Flume is developed in Java, making it compatible with the Hadoop ecosystem.
 
 ---
 
-### 3. Can you connect Tableau or Power BI to Hive?
-- **Options:**  
-  - It cannot be connected as it is only a data warehousing tool  
-  - Yes, it can be connected  
-  - No, it cannot be connected  
-  - Tableau is a standalone application; it does not connect at all  
-- **Correct Option:** Yes, it can be connected  
-- **Description:** Both Tableau and Power BI can connect to Hive using ODBC/JDBC drivers for analytics and visualization.
+## **Question 3:**
+
+**Can you connect Tableau or Power BI to Hive?**
+
+A) It cannot be connected as it is only a data warehousing tool  
+B) Yes, it can be connected  
+C) No, it cannot be connected  
+D) Tableau is a standalone application; it does not connect at all  
+
+✅ **Correct Option:** Yes, it can be connected  
+**Description:** Both Tableau and Power BI can connect to Hive using ODBC/JDBC drivers for analytics and visualization.
 
 ---
 
-### 4. Data Ingestion is:
-- **Options:**  
-  - The development and design of databases  
-  - Storing data within a system in its original format  
-  - The process of collecting data from data sources/databases and moving it to target systems.  
-  - A database used for reporting and analytics  
-- **Correct Option:** The process of collecting data from data sources/databases and moving it to target systems.  
-- **Description:** Data ingestion is about moving data from various sources into a storage or processing system.
+## **Question 4:**
+
+**Data Ingestion is:**
+
+A) The development and design of databases  
+B) Storing data within a system in its original format  
+C) The process of collecting data from data sources/databases and moving it to target systems.  
+D) A database used for reporting and analytics  
+
+✅ **Correct Option:** The process of collecting data from data sources/databases and moving it to target systems.  
+**Description:** Data ingestion is about moving data from various sources into a storage or processing system.
 
 ---
 
-### 5. Hive is a SQL-based data warehouse system for Hadoop that analyzes large datasets stored in Hadoop-compatible file systems.
-- **Options:**  
-  - Yes  
-  - No  
-- **Correct Option:** Yes  
-- **Description:** Hive allows SQL-like querying on large datasets stored in Hadoop.
+## **Question 5:**
+
+**Hive is a SQL-based data warehouse system for Hadoop that analyzes large datasets stored in Hadoop-compatible file systems.**
+
+A) Yes  
+B) No  
+
+✅ **Correct Option:** Yes  
+**Description:** Hive allows SQL-like querying on large datasets stored in Hadoop.
 
 ---
 
-### 6. How do you create a nested partitioned table in Hive?
-- **Options:**  
-  - PARTITIONED BY (column1, column2)  
-  - PARTITIONED TABLE (column1, column2).  
-  - PARTITIONED (column1, column2).  
-  - NESTED PARTITIONED BY (column1, column2).  
-- **Correct Option:** PARTITIONED BY (column1, column2)  
-- **Description:** This syntax creates a Hive table partitioned by multiple columns.
+## **Question 6:**
+
+**How do you create a nested partitioned table in Hive?**
+
+A) PARTITIONED BY (column1, column2)  
+B) PARTITIONED TABLE (column1, column2).  
+C) PARTITIONED (column1, column2).  
+D) NESTED PARTITIONED BY (column1, column2).  
+
+✅ **Correct Option:** PARTITIONED BY (column1, column2)  
+**Description:** This syntax creates a Hive table partitioned by multiple columns.
 
 ---
 
-### 7. How do you create a partition dynamically while loading data into a Hive table?
-- **Options:**  
-  - INSERT INTO TABLE ... PARTITION  
-  - LOAD DATA ... INTO TABLE ... PARTITION  
-  - LOAD DATA ... PARTITION ... INTO TABLE  
-  - INSERT INTO PARTITION ... SELECT FROM  
-- **Correct Option:** INSERT INTO TABLE ... PARTITION  
-- **Description:** This command enables dynamic partition creation during data insertion.
+## **Question 7:**
+
+**How do you create a partition dynamically while loading data into a Hive table?**
+
+A) INSERT INTO TABLE ... PARTITION  
+B) LOAD DATA ... INTO TABLE ... PARTITION  
+C) LOAD DATA ... PARTITION ... INTO TABLE  
+D) INSERT INTO PARTITION ... SELECT FROM  
+
+✅ **Correct Option:** INSERT INTO TABLE ... PARTITION  
+**Description:** This command enables dynamic partition creation during data insertion.
 
 ---
 
-### 8. How do you create a table in Hive with a specific column delimiter?
-- **Options:**  
-  - ROW FORMAT DELIMITED BY  
-  - ROWS DELIMITED BY  
-  - FIELDS DELIMITED BY  
-  - COLUMNS DELIMITED BY  
-- **Correct Option:** FIELDS DELIMITED BY  
-- **Description:** This clause specifies the delimiter for columns in Hive tables.
+## **Question 8:**
+
+**How do you create a table in Hive with a specific column delimiter?**
+
+A) ROW FORMAT DELIMITED BY  
+B) ROWS DELIMITED BY  
+C) FIELDS DELIMITED BY  
+D) COLUMNS DELIMITED BY  
+
+✅ **Correct Option:** FIELDS DELIMITED BY  
+**Description:** This clause specifies the delimiter for columns in Hive tables.
 
 ---
 
-### 9. How do you enable dynamic partitioning in Hive?
-- **Options:**  
-  - SET hive.exec.dynamic.partition=true;  
-  - SET hive.partitioning.dynamic=true;  
-  - SET hive.dynamic.partitioning=true;  
-  - SET hive.exec.partition.dynamic=true;  
-- **Correct Option:** SET hive.exec.dynamic.partition=true;  
-- **Description:** This property must be set to allow dynamic partitioning in Hive.
+## **Question 9:**
+
+**How do you enable dynamic partitioning in Hive?**
+
+A) SET hive.exec.dynamic.partition=true;  
+B) SET hive.partitioning.dynamic=true;  
+C) SET hive.dynamic.partitioning=true;  
+D) SET hive.exec.partition.dynamic=true;  
+
+✅ **Correct Option:** SET hive.exec.dynamic.partition=true;  
+**Description:** This property must be set to allow dynamic partitioning in Hive.
 
 ---
 
-### 10. How do you grant all privileges on a database to a user in MySQL?
-- **Options:**  
-  - GRANT ALL PRIVILEGES  
-  - GRANT DATABASE PRIVILEGES  
-  - GRANT DATABASE ACCESS  
-  - GRANT ALL ON DATABASE  
-- **Correct Option:** GRANT ALL PRIVILEGES  
-- **Description:** This command grants all available privileges to a user in MySQL.
+## **Question 10:**
+
+**How do you grant all privileges on a database to a user in MySQL?**
+
+A) GRANT ALL PRIVILEGES  
+B) GRANT DATABASE PRIVILEGES  
+C) GRANT DATABASE ACCESS  
+D) GRANT ALL ON DATABASE  
+
+✅ **Correct Option:** GRANT ALL PRIVILEGES  
+**Description:** This command grants all available privileges to a user in MySQL.
 
 ---
 
-### 11. How do you list files in a directory in Hadoop?
-- **Options:**  
-  - hadoop fs -ls  
-  - hadoop ls  
-  - hadoop dir  
-  - hadoop files  
-- **Correct Option:** hadoop fs -ls  
-- **Description:** Lists the contents of a directory in HDFS.
+## **Question 11:**
+
+**How do you list files in a directory in Hadoop?**
+
+A) hadoop fs -ls  
+B) hadoop ls  
+C) hadoop dir  
+D) hadoop files  
+
+✅ **Correct Option:** hadoop fs -ls  
+**Description:** Lists the contents of a directory in HDFS.
 
 ---
 
-### 12. How do you load data from a CSV file into a Hive partitioned table?
-- **Options:**  
-  - LOAD DATA INFILE  
-  - LOAD DATA INTO  
-  - LOAD DATA LOCAL INPATH  
-  - LOAD DATA PARTITION  
-- **Correct Option:** LOAD DATA LOCAL INPATH  
-- **Description:** Loads data from the local filesystem into a Hive table.
+## **Question 12:**
+
+**How do you load data from a CSV file into a Hive partitioned table?**
+
+A) LOAD DATA INFILE  
+B) LOAD DATA INTO  
+C) LOAD DATA LOCAL INPATH  
+D) LOAD DATA PARTITION  
+
+✅ **Correct Option:** LOAD DATA LOCAL INPATH  
+**Description:** Loads data from the local filesystem into a Hive table.
 
 ---
 
-### 13. How do you load data from a staging table into a target table in Hive?
-- **Options:**  
-  - INSERT INTO TABLE ... SELECT FROM ...  
-  - LOAD DATA INFILE ... INTO TABLE ...  
-  - LOAD DATA FROM ... INTO TABLE ...  
-  - INSERT OVERWRITE TABLE ... SELECT FROM ...  
-- **Correct Option:** INSERT INTO TABLE ... SELECT FROM ...  
-- **Description:** Copies data from one Hive table to another.
+## **Question 13:**
+
+**How do you load data from a staging table into a target table in Hive?**
+
+A) INSERT INTO TABLE ... SELECT FROM ...  
+B) LOAD DATA INFILE ... INTO TABLE ...  
+C) LOAD DATA FROM ... INTO TABLE ...  
+D) INSERT OVERWRITE TABLE ... SELECT FROM ...  
+
+✅ **Correct Option:** INSERT INTO TABLE ... SELECT FROM ...  
+**Description:** Copies data from one Hive table to another.
 
 ---
 
-### 14. How do you specify a specific partition while deleting data from a Hive table?
-- **Options:**  
-  - DELETE FROM ... WHERE PARTITION  
-  - DELETE PARTITION  
-  - TRUNCATE PARTITION  
-  - ALTER TABLE .. DROP PARTITION ..  
-- **Correct Option:** ALTER TABLE .. DROP PARTITION ..  
-- **Description:** Drops a specific partition and its data from a Hive table.
+## **Question 14:**
+
+**How do you specify a specific partition while deleting data from a Hive table?**
+
+A) DELETE FROM ... WHERE PARTITION  
+B) DELETE PARTITION  
+C) TRUNCATE PARTITION  
+D) ALTER TABLE .. DROP PARTITION ..  
+
+✅ **Correct Option:** ALTER TABLE .. DROP PARTITION ..  
+**Description:** Drops a specific partition and its data from a Hive table.
 
 ---
 
-### 15. How do you specify the delimiter for fields in a Hive table?
-- **Options:**  
-  - FIELDS DELIMITED BY  
-  - FIELDS TERMINATED BY  
-  - FIELDS SEPARATED BY  
-  - FIELDS ENCLOSED BY  
-- **Correct Option:** FIELDS TERMINATED BY  
-- **Description:** Defines the character that separates fields in each row.
+## **Question 15:**
+
+**How do you specify the delimiter for fields in a Hive table?**
+
+A) FIELDS DELIMITED BY  
+B) FIELDS TERMINATED BY  
+C) FIELDS SEPARATED BY  
+D) FIELDS ENCLOSED BY  
+
+✅ **Correct Option:** FIELDS TERMINATED BY  
+**Description:** Defines the character that separates fields in each row.
 
 ---
 
-### 16. How does HBase achieve data locality?
-- **Options:**  
-  - By storing data in memory.  
-  - By placing data on the same physical node as the computation.  
-  - By replicating data across multiple nodes.  
-  - By compressing data before storage.  
-- **Correct Option:** By placing data on the same physical node as the computation.  
-- **Description:** Data is stored close to where it is processed for better performance.
+## **Question 16:**
+
+**How does HBase achieve data locality?**
+
+A) By storing data in memory.  
+B) By placing data on the same physical node as the computation.  
+C) By replicating data across multiple nodes.  
+D) By compressing data before storage.  
+
+✅ **Correct Option:** By placing data on the same physical node as the computation.  
+**Description:** Data is stored close to where it is processed for better performance.
 
 ---
 
-### 17. How does HBase ensure high availability of data?
-- **Options:**  
-  - By replicating data across multiple Region Servers.  
-  - By compressing data before storage.  
-  - By storing data in memory before flushing to disk.  
-  - By using distributed file storage in HDFS.  
-- **Correct Option:** By replicating data across multiple Region Servers.  
-- **Description:** Data is replicated to multiple nodes to ensure availability.
+## **Question 17:**
+
+**How does HBase ensure high availability of data?**
+
+A) By replicating data across multiple Region Servers.  
+B) By compressing data before storage.  
+C) By storing data in memory before flushing to disk.  
+D) By using distributed file storage in HDFS.  
+
+✅ **Correct Option:** By replicating data across multiple Region Servers.  
+**Description:** Data is replicated to multiple nodes to ensure availability.
 
 ---
 
-### 18. How does HBase handle schema evolution?
-- **Options:**  
-  - By automatically updating the schema of existing data.  
-  - By enforcing a fixed schema and rejecting incompatible changes.  
-  - By requiring manual schema updates for each change.  
-  - By converting data to a different format during schema changes.  
-- **Correct Option:** By enforcing a fixed schema and rejecting incompatible changes.  
-- **Description:** Column families are fixed and incompatible changes are not allowed.
+## **Question 18:**
+
+**How does HBase handle schema evolution?**
+
+A) By automatically updating the schema of existing data.  
+B) By enforcing a fixed schema and rejecting incompatible changes.  
+C) By requiring manual schema updates for each change.  
+D) By converting data to a different format during schema changes.  
+
+✅ **Correct Option:** By enforcing a fixed schema and rejecting incompatible changes.  
+**Description:** Column families are fixed and incompatible changes are not allowed.
 
 ---
 
-### 19. How is data organized in HBase?
-- **Options:**  
-  - Tables and rows  
-  - Documents and collections  
-  - Key-value pairs  
-  - Nodes and relationships  
-- **Correct Option:** Key-value pairs  
-- **Description:** Data in HBase is stored as key-value pairs.
+## **Question 19:**
+
+**How is data organized in HBase?**
+
+A) Tables and rows  
+B) Documents and collections  
+C) Key-value pairs  
+D) Nodes and relationships  
+
+✅ **Correct Option:** Key-value pairs  
+**Description:** Data in HBase is stored as key-value pairs.
 
 ---
 
-### 20. In which folder do we keep all the 3rd party software in Linux?
-- **Options:**  
-  - usr  
-  - var  
-  - sbin  
-  - anywhere  
-- **Correct Option:** usr  
-- **Description:** Third-party software is commonly installed in `/usr` or `/usr/local`.
+## **Question 20:**
+
+**In which folder do we keep all the 3rd party software in Linux?**
+
+A) usr  
+B) var  
+C) sbin  
+D) anywhere  
+
+✅ **Correct Option:** usr  
+**Description:** Third-party software is commonly installed in `/usr` or `/usr/local`.
 
 ---
 
-### 21. In which format does data typically travel on a network?
-- **Options:**  
-  - Binary format  
-  - XML format  
-  - JSON format  
-  - Text format  
-- **Correct Option:** Binary format  
-- **Description:** Data is transmitted in binary format for efficiency.
+## **Question 21:**
+
+**In which format does data typically travel on a network?**
+
+A) Binary format  
+B) XML format  
+C) JSON format  
+D) Text format  
+
+✅ **Correct Option:** Binary format  
+**Description:** Data is transmitted in binary format for efficiency.
 
 ---
 
-### 22. In which version of Hadoop is the hdfs dfs command supported?
-- **Options:**  
-  - Hadoop 1.x  
-  - Hadoop 2.x  
-  - Hadoop 4.x  
-  - Hadoop 5.x  
-- **Correct Option:** Hadoop 2.x  
-- **Description:** The `hdfs dfs` command was introduced in Hadoop 2.x.
+## **Question 22:**
+
+**In which version of Hadoop is the hdfs dfs command supported?**
+
+A) Hadoop 1.x  
+B) Hadoop 2.x  
+C) Hadoop 4.x  
+D) Hadoop 5.x  
+
+✅ **Correct Option:** Hadoop 2.x  
+**Description:** The `hdfs dfs` command was introduced in Hadoop 2.x.
 
 ---
 
-### 23. Select the correct statement.
-- **Options:**  
-  - In the production environment, we get a hive prompt on CLI.... In the production environment, we get a beeline prompt for CLI and HUE browser for GUI.  
-  - In the production environment, hive is obsolete.  
-  - In the production environment, the hive prompt is always available on the terminal.  
-- **Correct Option:** In the production environment, we get a hive prompt on CLI.... In the production environment, we get a beeline prompt for CLI and HUE browser for GUI.  
-- **Description:** Beeline is preferred for CLI access and HUE for GUI in production.
+## **Question 23:**
+
+**Select the correct statement.**
+
+A) In the production environment, we get a hive prompt on CLI.... In the production environment, we get a beeline prompt for CLI and HUE browser for GUI.  
+B) In the production environment, hive is obsolete.  
+C) In the production environment, the hive prompt is always available on the terminal.  
+
+✅ **Correct Option:** In the production environment, we get a hive prompt on CLI.... In the production environment, we get a beeline prompt for CLI and HUE browser for GUI.  
+**Description:** Beeline is preferred for CLI access and HUE for GUI in production.
 
 ---
 
-### 24. Select the secured method to interact with Hive.
-- **Options:**  
-  - Hive prompt  
-  - Beeline  
-  - Kerberos  
-  - HUE  
-- **Correct Option:** Beeline  
-- **Description:** Beeline supports secure authentication and is recommended for production.
+## **Question 24:**
+
+**Select the secured method to interact with Hive.**
+
+A) Hive prompt  
+B) Beeline  
+C) Kerberos  
+D) HUE  
+
+✅ **Correct Option:** Beeline  
+**Description:** Beeline supports secure authentication and is recommended for production.
 
 ---
 
-### 25. Statement: hadoop fs -mkdir  creates a directory on the Linux filesystem.
-- **Options:**  
-  - True  
-  - False  
-  - Maybe  
-- **Correct Option:** False  
-- **Description:** The command creates a directory in HDFS, not on the local filesystem.
+## **Question 25:**
+
+**Statement: hadoop fs -mkdir creates a directory on the Linux filesystem.**
+
+A) True  
+B) False  
+C) Maybe  
+
+✅ **Correct Option:** False  
+**Description:** The command creates a directory in HDFS, not on the local filesystem.
 
 ---
 
-### 26. What are the different types of Distributed File Systems?
-- **Options:**  
-  - Tape file systems, Windows Distributed File System.  
-  - Network File System, Transnational file systems.  
-  - HDFS, GFS, MapR FS, S3, EMR FS.  
-  - None of the above.  
-- **Correct Option:** HDFS, GFS, MapR FS, S3, EMR FS.  
-- **Description:** These are all distributed file systems used in big data and cloud.
+## **Question 26:**
+
+**What are the different types of Distributed File Systems?**
+
+A) Tape file systems, Windows Distributed File System.  
+B) Network File System, Transnational file systems.  
+C) HDFS, GFS, MapR FS, S3, EMR FS.  
+D) None of the above.  
+
+✅ **Correct Option:** HDFS, GFS, MapR FS, S3, EMR FS.  
+**Description:** These are all distributed file systems used in big data and cloud.
 
 ---
 
-### 27. What are the different types of processing?
-- **Options:**  
-  - Batch processing and real-time processing.  
-  - Distributed processing.  
-  - Ad-hoc and Parallel processing.  
-  - All of the above.  
-- **Correct Option:** All of the above.  
-- **Description:** All listed types are valid forms of data processing.
+## **Question 27:**
+
+**What are the different types of processing?**
+
+A) Batch processing and real-time processing.  
+B) Distributed processing.  
+C) Ad-hoc and Parallel processing.  
+D) All of the above.  
+
+✅ **Correct Option:** All of the above.  
+**Description:** All listed types are valid forms of data processing.
 
 ---
 
-### 28. What are the fundamental pillars of the well-architected framework?
-- **Options:**  
-  - Reliability and Operational excellence.  
-  - Security and Performance efficiency.  
-  - Cost optimization and Sustainability.  
-  - All of the above.  
-- **Correct Option:** All of the above.  
-- **Description:** All these pillars are part of a well-architected framework.
+## **Question 28:**
+
+**What are the fundamental pillars of the well-architected framework?**
+
+A) Reliability and Operational excellence.  
+B) Security and Performance efficiency.  
+C) Cost optimization and Sustainability.  
+D) All of the above.  
+
+✅ **Correct Option:** All of the above.  
+**Description:** All these pillars are part of a well-architected framework.
 
 ---
 
-### 29. What are the uses of Flume?
-- **Options:**  
-  - Flume is used to extract streaming data from sources such as social media and web logs, and then store it on HDFS.  
-  - Flume is used to transfer data between RDBMS and HDFS.  
-  - Both A & B  
-  - None of the above.  
-- **Correct Option:** Flume is used to extract streaming data from sources such as social media and web logs, and then store it on HDFS.  
-- **Description:** Flume is primarily used for ingesting streaming data into HDFS.
+## **Question 29:**
+
+**What are the uses of Flume?**
+
+A) Flume is used to extract streaming data from sources such as social media and web logs, and then store it on HDFS.  
+B) Flume is used to transfer data between RDBMS and HDFS.  
+C) Both A & B  
+D) None of the above.  
+
+✅ **Correct Option:** Flume is used to extract streaming data from sources such as social media and web logs, and then store it on HDFS.  
+**Description:** Flume is primarily used for ingesting streaming data into HDFS.
 
 ---
 
-### 30. What command is used to exit the MySQL command-line interface?
-- **Options:**  
-  - QUIT  
-  - EXIT  
-  - END  
-  - CLOSE  
-- **Correct Option:** EXIT  
-- **Description:** Typing `EXIT` (or `QUIT`) exits the MySQL CLI.
+## **Question 30:**
+
+**What command is used to exit the MySQL command-line interface?**
+
+A) QUIT  
+B) EXIT  
+C) END  
+D) CLOSE  
+
+✅ **Correct Option:** EXIT  
+**Description:** Typing `EXIT` (or `QUIT`) exits the MySQL CLI.
 
 ---
 
-### 31. What does HBase use to ensure data integrity in case of failures or crashes?
-- **Options:**  
-  - Write-ahead logs (WAL)  
-  - Data replication  
-  - Checksums  
-  - Region splits  
-- **Correct Option:** Write-ahead logs (WAL)  
-- **Description:** WAL records changes before they are written to disk, ensuring recoverability.
+## **Question 31:**
+
+**What does HBase use to ensure data integrity in case of failures or crashes?**
+
+A) Write-ahead logs (WAL)  
+B) Data replication  
+C) Checksums  
+D) Region splits  
+
+✅ **Correct Option:** Write-ahead logs (WAL)  
+**Description:** WAL records changes before they are written to disk, ensuring recoverability.
 
 ---
 
-### 32. What does High Availability refer to in Hadoop 2.x?
-- **Options:**  
-  - Ensuring the availability of high-speed network connections.  
-  - Ensuring the availability of high-performance hardware infrastructure.  
-  - Ensuring that the Hadoop cluster is always running without any downtime.  
-  - Ensuring the availability of high-capacity storage devices.  
-- **Correct Option:** Ensuring that the Hadoop cluster is always running without any downtime.  
-- **Description:** High Availability ensures minimal downtime in Hadoop clusters.
+## **Question 32:**
+
+**What does High Availability refer to in Hadoop 2.x?**
+
+A) Ensuring the availability of high-speed network connections.  
+B) Ensuring the availability of high-performance hardware infrastructure.  
+C) Ensuring that the Hadoop cluster is always running without any downtime.  
+D) Ensuring the availability of high-capacity storage devices.  
+
+✅ **Correct Option:** Ensuring that the Hadoop cluster is always running without any downtime.  
+**Description:** High Availability ensures minimal downtime in Hadoop clusters.
 
 ---
 
-### 33. What does the dot at the end of the following command refer to: hadoop fs -get .?
-- **Options:**  
-  - The current working directory.  
-  - The parent directory.  
-  - A file extension.  
-  - It has no special meaning.  
-- **Correct Option:** The current working directory.  
-- **Description:** A single dot (`.`) refers to the current directory in Unix-like systems.
+## **Question 33:**
+
+**What does the dot at the end of the following command refer to: hadoop fs -get .?**
+
+A) The current working directory.  
+B) The parent directory.  
+C) A file extension.  
+D) It has no special meaning.  
+
+✅ **Correct Option:** The current working directory.  
+**Description:** A single dot (`.`) refers to the current directory in Unix-like systems.
 
 ---
 
-### 34. What does the following command do: hadoop fs mkdir ?
-- **Options:**  
-  - Lists files in a directory on the Linux filesystem.  
-  - Copies files between the Hadoop Distributed File System (HDFS) and the local filesystem.  
-  - Creates a new directory in the Hadoop Distributed File System (HDFS).  
-  - Deletes a directory from the HDFS.  
-- **Correct Option:** Creates a new directory in the Hadoop Distributed File System (HDFS).  
-- **Description:** The command creates a directory in HDFS.
+## **Question 34:**
+
+**What does the following command do: hadoop fs mkdir ?**
+
+A) Lists files in a directory on the Linux filesystem.  
+B) Copies files between the Hadoop Distributed File System (HDFS) and the local filesystem.  
+C) Creates a new directory in the Hadoop Distributed File System (HDFS).  
+D) Deletes a directory from the HDFS.  
+
+✅ **Correct Option:** Creates a new directory in the Hadoop Distributed File System (HDFS).  
+**Description:** The command creates a directory in HDFS.
 
 ---
 
-### 35. What is a jar file?
-- **Options:**  
-  - Java archival file is not a pack of Classes.  
-  - Java archival file is a pack of Objects.  
-  - Java archival file is a pack of Classes.  
-  - Java archival file is a pack of both Classes as well as Objects.  
-- **Correct Option:** Java archival file is a pack of Classes.  
-- **Description:** A JAR file packages Java class files and resources for distribution.
+## **Question 35:**
+
+**What is a jar file?**
+
+A) Java archival file is not a pack of Classes.  
+B) Java archival file is a pack of Objects.  
+C) Java archival file is a pack of Classes.  
+D) Java archival file is a pack of both Classes as well as Objects.  
+
+✅ **Correct Option:** Java archival file is a pack of Classes.  
+**Description:** A JAR file packages Java class files and resources for distribution.
 
 ---
 
-### 36. What is a JDBC connector used for?
-- **Options:**  
-  - Connecting Java applications to databases using the JDBC API.  
-  - Transferring data between Hadoop and external systems.  
-  - Enabling secure communication between databases and applications.  
-  - Creating complex SQL queries in Java.  
-- **Correct Option:** Connecting Java applications to databases using the JDBC API.  
-- **Description:** JDBC connectors allow Java apps to interact with databases.
+## **Question 36:**
+
+**What is a JDBC connector used for?**
+
+A) Connecting Java applications to databases using the JDBC API.  
+B) Transferring data between Hadoop and external systems.  
+C) Enabling secure communication between databases and applications.  
+D) Creating complex SQL queries in Java.  
+
+✅ **Correct Option:** Connecting Java applications to databases using the JDBC API.  
+**Description:** JDBC connectors allow Java apps to interact with databases.
 
 ---
 
-### 37. What is a JDBC connector?
-- **Options:**  
-  - It is a driver that enables Java programs to interact with databases using the JDBC API.  
-  - It is a tool that connects multiple JDBC drivers to a single database.  
-  - It is a protocol used for secure communication between databases and applications.  
-  - It is a framework for building complex SQL queries in Java.  
-- **Correct Option:** It is a driver that enables Java programs to interact with databases using the JDBC API.  
-- **Description:** JDBC connectors are drivers for Java-database interaction.
+## **Question 37:**
+
+**What is a JDBC connector?**
+
+A) It is a driver that enables Java programs to interact with databases using the JDBC API.  
+B) It is a tool that connects multiple JDBC drivers to a single database.  
+C) It is a protocol used for secure communication between databases and applications.  
+D) It is a framework for building complex SQL queries in Java.  
+
+✅ **Correct Option:** It is a driver that enables Java programs to interact with databases using the JDBC API.  
+**Description:** JDBC connectors are drivers for Java-database interaction.
 
 ---
 
-### 38. What is a sink in Flume?
-- **Options:**  
-  - It specifies the name prefixed to the files created by Apache Flume in the HDFS directory.  
-  - It specifies the suffix used for the temporary files that Flume actively writes into.  
-  - It specifies the number of events written to a file before it is transferred into HDFS.  
-  - None of the above.  
-- **Correct Option:** It specifies the name prefixed to the files created by Apache Flume in the HDFS directory.  
-- **Description:** The sink delivers events to the final destination, controlling file naming.
+## **Question 38:**
+
+**What is a sink in Flume?**
+
+A) It specifies the name prefixed to the files created by Apache Flume in the HDFS directory.  
+B) It specifies the suffix used for the temporary files that Flume actively writes into.  
+C) It specifies the number of events written to a file before it is transferred into HDFS.  
+D) None of the above.  
+
+✅ **Correct Option:** It specifies the name prefixed to the files created by Apache Flume in the HDFS directory.  
+**Description:** The sink delivers events to the final destination, controlling file naming.
 
 ---
 
-### 39. What is an RPC call?
-- **Options:**  
-  - Remote Process Call  
-  - Remote Procedure Call  
-  - Reliable Process Communication  
-  - Reliable Procedure Communication  
-- **Correct Option:** Remote Procedure Call  
-- **Description:** RPC allows a program to execute code on a remote system as if it were local.
+## **Question 39:**
+
+**What is an RPC call?**
+
+A) Remote Process Call  
+B) Remote Procedure Call  
+C) Reliable Process Communication  
+D) Reliable Procedure Communication  
+
+✅ **Correct Option:** Remote Procedure Call  
+**Description:** RPC allows a program to execute code on a remote system as if it were local.
 
 ---
 
-### 40. What is another term commonly used for storage in Linux?
-- **Options:**  
-  - Dumping  
-  - Keep  
-  - Hold to storage  
-  - Maintain  
-- **Correct Option:** Dumping  
-- **Description:** "Dumping" refers to saving data or memory contents to storage, often for backup or debugging.
+## **Question 40:**
+
+**What is another term commonly used for storage in Linux?**
+
+A) Dumping  
+B) Keep  
+C) Hold to storage  
+D) Maintain  
+
+✅ **Correct Option:** Dumping  
+**Description:** "Dumping" refers to saving data or memory contents to storage, often for backup or debugging.
 
 ---
-Here is the complete Q\&A (Questions 41 to 80), with all options and correct answers clearly marked. Each question includes a brief explanation or reasoning for the correct answer:
 
----
-
-### **Question 41**
+## **Question 41:**
 
 **What is Apache Flume?**
-A) Apache Flume is a reliable and distributed system for collecting, aggregating and moving massive quantities of log data.
-B) It has a simple yet flexible architecture based on streaming data flows.
-C) Apache Flume is used to collect log data present in log files from web servers and aggregate it into HDFS for analysis.
-D) **All of the above.** ✅
-**Explanation:** Flume is designed specifically for efficiently collecting, aggregating, and moving large amounts of log data from multiple sources into HDFS.
+
+A) Apache Flume is a reliable and distributed system for collecting, aggregating and moving massive quantities of log data.  
+B) It has a simple yet flexible architecture based on streaming data flows.  
+C) Apache Flume is used to collect log data present in log files from web servers and aggregate it into HDFS for analysis.  
+D) All of the above.  
+
+✅ **Correct Option:** All of the above.  
+**Description:** Flume is designed specifically for efficiently collecting, aggregating, and moving large amounts of log data from multiple sources into HDFS.
 
 ---
 
-### **Question 42**
+## **Question 42:**
 
 **What is data in motion?**
-A) Data in file
-B) **Streaming data** ✅
-C) Data in storage
-D) All of the above
-**Explanation:** Data in motion refers to real-time data that is being transferred from one location to another, such as through Kafka or Flume.
+
+A) Data in file  
+B) Streaming data  
+C) Data in storage  
+D) All of the above  
+
+✅ **Correct Option:** Streaming data  
+**Description:** Data in motion refers to real-time data that is being transferred from one location to another, such as through Kafka or Flume.
 
 ---
 
-### **Question 43**
+## **Question 43:**
 
 **What is data integration?**
-A) **The process of bringing data from various sources together to provide users with a unified view.** ✅
-B) Collecting data from databases and moving it to target systems
-C) Storing data in its original format
-D) None of the above
-**Explanation:** Data integration enables analytical platforms to work with data from disparate sources as a single, cohesive dataset.
+
+A) The process of bringing data from various sources together to provide users with a unified view.  
+B) Collecting data from databases and moving it to target systems  
+C) Storing data in its original format  
+D) None of the above  
+
+✅ **Correct Option:** The process of bringing data from various sources together to provide users with a unified view.  
+**Description:** Data integration enables analytical platforms to work with data from disparate sources as a single, cohesive dataset.
 
 ---
 
-### **Question 44**
+## **Question 44:**
 
 **What is ETL?**
-A) **Extracts, Transforms, and Loads data to a data warehouse.** ✅
-B) Extracts, Loads, and Transforms data
-C) Loads, Extracts, and Transforms
-D) None of the above
-**Explanation:** ETL is a core component of data warehousing pipelines.
+
+A) Extracts, Transforms, and Loads data to a data warehouse.  
+B) Extracts, Loads, and Transforms data  
+C) Loads, Extracts, and Transforms  
+D) None of the above  
+
+✅ **Correct Option:** Extracts, Transforms, and Loads data to a data warehouse.  
+**Description:** ETL is a core component of data warehousing pipelines.
 
 ---
 
-### **Question 45**
+## **Question 45:**
 
 **What is HBase?**
-A) A column-oriented relational database
-B) A distributed file system
-C) A key-value store
-D) **A column-oriented non-relational database management system** ✅
-**Explanation:** HBase is a NoSQL database built on top of HDFS.
+
+A) A column-oriented relational database  
+B) A distributed file system  
+C) A key-value store  
+D) A column-oriented non-relational database management system  
+
+✅ **Correct Option:** A column-oriented non-relational database management system  
+**Description:** HBase is a NoSQL database built on top of HDFS.
 
 ---
 
-### **Question 46**
+## **Question 46:**
 
 **What is Hive?**
-A) **An open-source data warehouse system.** ✅
-B) Relational database
-C) Data scrubbing tool
-D) All of the above
-**Explanation:** Hive provides SQL-like querying over structured data in HDFS.
+
+A) An open-source data warehouse system.  
+B) Relational database  
+C) Data scrubbing tool  
+D) All of the above  
+
+✅ **Correct Option:** An open-source data warehouse system.  
+**Description:** Hive provides SQL-like querying over structured data in HDFS.
 
 ---
 
-### **Question 47**
+## **Question 47:**
 
 **What is OLAP?**
-A) **Multidimensional analysis of large data from a data warehouse.** ✅
-B) OLTP system for transactions
-C) Single-dimensional analysis
-D) All of the above
-**Explanation:** OLAP allows for complex analytical queries over large data.
+
+A) Multidimensional analysis of large data from a data warehouse.  
+B) OLTP system for transactions  
+C) Single-dimensional analysis  
+D) All of the above  
+
+✅ **Correct Option:** Multidimensional analysis of large data from a data warehouse.  
+**Description:** OLAP allows for complex analytical queries over large data.
 
 ---
 
-### **Question 48**
+## **Question 48:**
 
 **What is Polyglot persistence?**
-A) **Using multiple data storage technologies for an application.** ✅
-B) Using only one database
-C) Using only RDBMS
-D) None of the above
-**Explanation:** It reflects the reality of diverse storage needs in modern apps.
+
+A) Using multiple data storage technologies for an application.  
+B) Using only one database  
+C) Using only RDBMS  
+D) None of the above  
+
+✅ **Correct Option:** Using multiple data storage technologies for an application.  
+**Description:** It reflects the reality of diverse storage needs in modern apps.
 
 ---
 
-### **Question 49**
+## **Question 49:**
 
 **What is Structured data according to ITIL?**
-A) **Data in tabular format** ✅
-B) Logs data queried with SQL
-C) Streaming tabular data (Client Data)
-D) Both A & C
-**Explanation:** Structured data is typically organized into rows and columns.
+
+A) Data in tabular format  
+B) Logs data queried with SQL  
+C) Streaming tabular data (Client Data)  
+D) Both A & C  
+
+✅ **Correct Option:** Data in tabular format  
+**Description:** Structured data is typically organized into rows and columns.
 
 ---
 
-### **Question 50**
+## **Question 50:**
 
 **What is the abbreviation of SDK?**
-A) Software Developing Kit
-B) **Software Development Kit** ✅
-C) Software Deleting Kit
-D) Software Driver Kit
-**Explanation:** SDK provides tools and libraries for application development.
+
+A) Software Developing Kit  
+B) Software Development Kit  
+C) Software Deleting Kit  
+D) Software Driver Kit  
+
+✅ **Correct Option:** Software Development Kit  
+**Description:** SDK provides tools and libraries for application development.
 
 ---
 
-### **Question 51**
+## **Question 51:**
 
 **Advantage of HBase over RDBMS for OLAP workloads?**
-A) **Scalability** ✅
-B) Data locality
-C) High availability
-D) Flexible schema design
-**Explanation:** HBase scales horizontally to handle big data.
+
+A) Scalability  
+B) Data locality  
+C) High availability  
+D) Flexible schema design  
+
+✅ **Correct Option:** Scalability  
+**Description:** HBase scales horizontally to handle big data.
 
 ---
 
-### **Question 52**
+## **Question 52:**
 
 **Default database used by Sqoop?**
-A) Oracle
-B) **MySQL** ✅
-C) Option 3
-D) Teradata
-**Explanation:** Sqoop uses MySQL to store metadata and job-related info.
+
+A) Oracle  
+B) MySQL  
+C) Option 3  
+D) Teradata  
+
+✅ **Correct Option:** MySQL  
+**Description:** Sqoop uses MySQL to store metadata and job-related info.
 
 ---
 
-### **Question 53**
+## **Question 53:**
 
 **Default replication factor in HDFS?**
-A) 1
-B) 2
-C) **3** ✅
-D) 4
-**Explanation:** Default is 3 for fault tolerance.
+
+A) 1  
+B) 2  
+C) 3  
+D) 4  
+
+✅ **Correct Option:** 3  
+**Description:** Default is 3 for fault tolerance.
 
 ---
 
-### **Question 54**
+## **Question 54:**
 
 **Default scheduling algorithm in YARN ResourceManager?**
-A) FCFS
-B) **Fair Scheduler** ✅
-C) Capacity Scheduler
-D) LRU
-**Explanation:** Fair scheduler ensures equal resource sharing.
+
+A) FCFS  
+B) Fair Scheduler  
+C) Capacity Scheduler  
+D) LRU  
+
+✅ **Correct Option:** Fair Scheduler  
+**Description:** Fair scheduler ensures equal resource sharing.
 
 ---
 
-### **Question 55**
+## **Question 55:**
 
 **Difference between Flume and Sqoop?**
-A) Data cleansing tools
-B) Both import RDBMS data
-C) **Flume = Logs; Sqoop = RDBMS** ✅
-D) Sqoop = Logs; Flume = RDBMS
-**Explanation:** Flume deals with logs; Sqoop with relational data.
+
+A) Data cleansing tools  
+B) Both import RDBMS data  
+C) Flume = Logs; Sqoop = RDBMS  
+D) Sqoop = Logs; Flume = RDBMS  
+
+✅ **Correct Option:** Flume = Logs; Sqoop = RDBMS  
+**Description:** Flume deals with logs; Sqoop with relational data.
 
 ---
 
-### **Question 56**
+## **Question 56:**
 
 **Difference: `exec` vs `source` command?**
-A) exec = execute script, source = source script
-B) exec = executable, source = script
-C) **exec = new shell, source = current shell** ✅
-D) No difference
-**Explanation:** `source` affects current shell; `exec` replaces current process.
+
+A) exec = execute script, source = source script  
+B) exec = executable, source = script  
+C) exec = new shell, source = current shell  
+D) No difference  
+
+✅ **Correct Option:** exec = new shell, source = current shell  
+**Description:** `source` affects current shell; `exec` replaces current process.
 
 ---
 
-### **Question 57**
+## **Question 57:**
 
 **Default file format for Hive tables?**
-A) **TextFile** ✅
-B) ORC
-C) Parquet
-D) Avro
-**Explanation:** Default is plain text unless specified.
+
+A) TextFile  
+B) ORC  
+C) Parquet  
+D) Avro  
+
+✅ **Correct Option:** TextFile  
+**Description:** Default is plain text unless specified.
 
 ---
 
-### **Question 58**
+## **Question 58:**
 
 **Parameter to specify query in Sqoop?**
-A) **--query** ✅
-B) --select
-C) --data-query
-D) --import-query
-**Explanation:** `--query` allows for SQL-based imports in Sqoop.
+
+A) --query  
+B) --select  
+C) --data-query  
+D) --import-query  
+
+✅ **Correct Option:** --query  
+**Description:** `--query` allows for SQL-based imports in Sqoop.
 
 ---
 
-### **Question 59**
+## **Question 59:**
 
 **Primary advantage of HBase (column-oriented)?**
-A) Improved write performance
-B) Reduced storage
-C) Faster loading
-D) **Enhanced query performance** ✅
-**Explanation:** Columnar design improves analytics on specific columns.
+
+A) Improved write performance  
+B) Reduced storage  
+C) Faster loading  
+D) Enhanced query performance  
+
+✅ **Correct Option:** Enhanced query performance  
+**Description:** Columnar design improves analytics on specific columns.
 
 ---
 
-### **Question 60**
+## **Question 60:**
 
 **Benefit of HBase's block cache?**
-A) **Improved read performance** ✅
-B) Reduced storage
-C) Faster loading
-D) Compression
-**Explanation:** Frequently accessed data is cached for speed.
 
----
+A) Improved read performance  
+B) Reduced storage  
+C) Faster loading  
+D) Compression  
 
-### **Question 61**
+✅ **Correct Option:** Improved read performance  
+**Description:** Frequently accessed data is cached for speed.
 
+# Big Data & Hadoop Q&A Collection (Questions 61-100)
+
+## Question 61
 **RDBMS vs MySQL?**
-A) RDBMS is specific DBMS
-B) **RDBMS = general type; MySQL = specific RDBMS** ✅
-C) Same thing
-D) RDBMS = relational; MySQL = non-relational
+- A) RDBMS is specific DBMS
+- **B) RDBMS = general type; MySQL = specific RDBMS** ✅
+- C) Same thing
+- D) RDBMS = relational; MySQL = non-relational
+
 **Explanation:** MySQL is an RDBMS implementation.
 
 ---
 
-### **Question 62**
-
+## Question 62
 **Primary purpose of MapReduce?**
-A) Data ingestion
-B) Visualization
-C) **Data processing** ✅
-D) Security
+- A) Data ingestion
+- B) Visualization
+- **C) Data processing** ✅
+- D) Security
+
 **Explanation:** MapReduce processes large-scale data in Hadoop.
 
 ---
 
-### **Question 63**
-
+## Question 63
 **Primary storage in Hadoop?**
-A) HBase
-B) **HDFS** ✅
-C) Hive
-D) Spark
-**Explanation:** Hadoop’s file storage backbone is HDFS.
+- A) HBase
+- **B) HDFS** ✅
+- C) Hive
+- D) Spark
+
+**Explanation:** Hadoop's file storage backbone is HDFS.
 
 ---
 
-### **Question 64**
-
+## Question 64
 **Use case for HBase?**
-A) **Real-time analytics** ✅
-B) Batch processing
-C) Data warehousing
-D) Stream processing
+- **A) Real-time analytics** ✅
+- B) Batch processing
+- C) Data warehousing
+- D) Stream processing
+
 **Explanation:** HBase supports low-latency reads/writes.
 
 ---
 
-### **Question 65**
+## Question 65
+**Hive's processing engine?**
+- A) MySQL
+- B) Hive SQL
+- **C) MapReduce** ✅
+- D) Java
 
-**Hive’s processing engine?**
-A) MySQL
-B) Hive SQL
-C) **MapReduce** ✅
-D) Java
 **Explanation:** By default, Hive queries are converted to MapReduce.
 
 ---
 
-### **Question 66**
-
+## Question 66
 **Prompt used in Pig?**
-A) **Grunt** ✅
-B) Hive prompt
-C) Beeline
-D) None
+- **A) Grunt** ✅
+- B) Hive prompt
+- C) Beeline
+- D) None
+
 **Explanation:** Grunt is the interactive shell for Pig.
 
 ---
 
-### **Question 67**
-
+## Question 67
 **Purpose of HBase compactions?**
-A) Improve consistency
-B) **Optimize storage and performance** ✅
-C) Enable joins
-D) Prevent access
+- A) Improve consistency
+- **B) Optimize storage and performance** ✅
+- C) Enable joins
+- D) Prevent access
+
 **Explanation:** Compaction merges files for efficiency.
 
 ---
 
-### **Question 68**
-
+## Question 68
 **Purpose of MySQL databases/tables?**
-A) **Structured data storage** ✅
-B) UI for MySQL
-C) Complex calculations
-D) Fault tolerance
+- **A) Structured data storage** ✅
+- B) UI for MySQL
+- C) Complex calculations
+- D) Fault tolerance
+
 **Explanation:** MySQL tables organize relational data.
 
 ---
 
-### **Question 69**
-
+## Question 69
 **Region splitting in HBase?**
-A) Write performance
-B) **Horizontal scalability** ✅
-C) Optimize query plans
-D) Replication
+- A) Write performance
+- **B) Horizontal scalability** ✅
+- C) Optimize query plans
+- D) Replication
+
 **Explanation:** Regions split to distribute load.
 
 ---
 
-### **Question 70**
-
+## Question 70
 **Purpose of `INSERT OVERWRITE` in Hive?**
-A) Insert new
-B) **Overwrite existing** ✅
-C) Append data
-D) Delete data
+- A) Insert new
+- **B) Overwrite existing** ✅
+- C) Append data
+- D) Delete data
+
 **Explanation:** This replaces table/partition data.
 
 ---
 
-### **Question 71**
-
+## Question 71
 **Purpose of `LOCATION` in `CREATE TABLE` in Hive?**
-A) Table name
-B) File format
-C) **Data location** ✅
-D) Column schema
+- A) Table name
+- B) File format
+- **C) Data location** ✅
+- D) Column schema
+
 **Explanation:** Tells Hive where to read/write data.
 
 ---
 
-### **Question 72**
-
+## Question 72
 **`MSCK REPAIR TABLE` in Hive?**
-A) Repairs corrupt data
-B) **Updates metadata after adding partitions** ✅
-C) Deletes partitions
-D) Checks schema
+- A) Repairs corrupt data
+- **B) Updates metadata after adding partitions** ✅
+- C) Deletes partitions
+- D) Checks schema
+
 **Explanation:** Syncs metadata with file system.
 
 ---
 
-### **Question 73**
-
+## Question 73
 **Purpose of NameNode in Hadoop?**
-A) **Stores file metadata** ✅
-B) Stores data blocks
-C) Executes jobs
-D) Allocates resources
-**Explanation:** The NameNode is HDFS’s metadata manager.
+- **A) Stores file metadata** ✅
+- B) Stores data blocks
+- C) Executes jobs
+- D) Allocates resources
+
+**Explanation:** The NameNode is HDFS's metadata manager.
 
 ---
 
-### **Question 74**
-
+## Question 74
 **`PARTITION` in `LOAD DATA` in Hive?**
-A) **Specifies partition for data** ✅
-B) Filters data
-C) Sorts data
-D) File format
+- **A) Specifies partition for data** ✅
+- B) Filters data
+- C) Sorts data
+- D) File format
+
 **Explanation:** Helps load data into specific partition.
 
 ---
 
-### **Question 75**
-
+## Question 75
 **`PARTITIONED BY` in Hive?**
-A) **Defines partition columns** ✅
-B) Partitioning strategy
-C) Separate directories
-D) Data location
+- **A) Defines partition columns** ✅
+- B) Partitioning strategy
+- C) Separate directories
+- D) Data location
+
 **Explanation:** Specifies which column(s) define partitions.
 
 ---
 
-### **Question 76**
-
+## Question 76
 **`ROW FORMAT DELIMITED` in Hive?**
-A) **Specifies delimiter** ✅
-B) Row schema
-C) Format of storage
-D) Delimited mode
+- **A) Specifies delimiter** ✅
+- B) Row schema
+- C) Format of storage
+- D) Delimited mode
+
 **Explanation:** Used for CSV/TSV data import.
 
 ---
 
-### **Question 77**
-
+## Question 77
 **`ROW FORMAT SERDE` in Hive?**
-A) **Defines storage format** ✅
-B) Delimiter
-C) Serialized mode
-D) Encoding
+- **A) Defines storage format** ✅
+- B) Delimiter
+- C) Serialized mode
+- D) Encoding
+
 **Explanation:** SERDE handles serialization/deserialization of rows.
 
 ---
 
-### **Question 78**
-
+## Question 78
 **SecondaryNameNode purpose in Hadoop?**
-A) **Backups of NameNode metadata** ✅
-B) High availability
-C) Stores data blocks
-D) Job management
+- **A) Backups of NameNode metadata** ✅
+- B) High availability
+- C) Stores data blocks
+- D) Job management
+
 **Explanation:** Used for checkpointing the NameNode state.
 
 ---
 
-### **Question 79**
-
+## Question 79
 **Purpose of `STORED AS ORC` in Hive?**
-A) File format
-B) Compression
-C) Optimize performance
-D) **Store data in ORC format** ✅
+- A) File format
+- B) Compression
+- C) Optimize performance
+- **D) Store data in ORC format** ✅
+
 **Explanation:** ORC is a columnar format ideal for Hive.
 
 ---
 
-### **Question 80**
-
+## Question 80
 **Purpose of `STORED AS PARQUET` in Hive?**
-A) File format
-B) Compression
-C) Optimize performance
-D) **Store data in Parquet format** ✅
+- A) File format
+- B) Compression
+- C) Optimize performance
+- **D) Store data in Parquet format** ✅
+
 **Explanation:** Parquet is another efficient columnar format.
 
 ---
 
-Here’s the **full Q\&A from Question 81 to 120**, with **all options included** and the **correct answer marked**, along with brief explanations for each:
+## Question 81
+**What is the purpose of the STORED AS TEXTFILE clause in Hive?**
+- A) It compresses the table's data
+- B) It optimizes the performance of query execution
+- C) It specifies the file format of the table's data
+- **D) It stores the table's data in text file format** ✅
+
+**Explanation:** Specifies the storage format for Hive table data.
 
 ---
 
-### **Q81. What is the purpose of the STORED AS TEXTFILE clause in Hive?**
+## Question 82
+**What is the purpose of the Write-Ahead Log (WAL) in HBase?**
+- A) To store data in memory before flushing to disk
+- **B) To ensure durability and recoverability of data** ✅
+- C) To manage data compactions
+- D) To coordinate communication between HMaster and Region Servers
 
-* A. It compresses the table's data.
-* B. It optimizes the performance of query execution.
-* C. It specifies the file format of the table's data.
-* ✅ **D. It stores the table's data in text file format.**
-  📘 *Specifies the storage format for Hive table data.*
-
----
-
-### **Q82. What is the purpose of the Write-Ahead Log (WAL) in HBase?**
-
-* A. To store data in memory before flushing to disk
-* ✅ **B. To ensure durability and recoverability of data**
-* C. To manage data compactions
-* D. To coordinate communication between HMaster and Region Servers
-  📘 *WAL ensures no data is lost during failure.*
+**Explanation:** WAL ensures no data is lost during failure.
 
 ---
 
-### **Q83. What is the purpose of the YARN NodeManager in Hadoop?**
+## Question 83
+**What is the purpose of the YARN NodeManager in Hadoop?**
+- A) Storing the metadata of the files in HDFS
+- B) Storing the data blocks of files in HDFS
+- C) Managing the allocation of resources in the cluster
+- **D) Executing MapReduce tasks** ✅
 
-* A. Storing the metadata of the files in HDFS
-* B. Storing the data blocks of files in HDFS
-* C. Managing the allocation of resources in the cluster
-* ✅ **D. Executing MapReduce tasks**
-  📘 *NodeManager launches and monitors containers.*
-
----
-
-### **Q84. What is the recommended block size for HBase tables?**
-
-* ✅ **A. 64 KB**
-* B. 1 MB
-* C. 8 KB
-* D. 256 KB
-  📘 *64 KB is a commonly recommended block size in HBase.*
+**Explanation:** NodeManager launches and monitors containers.
 
 ---
 
-### **Q85. What is the relationship between RDBMS and MySQL?**
+## Question 84
+**What is the recommended block size for HBase tables?**
+- **A) 64 KB** ✅
+- B) 1 MB
+- C) 8 KB
+- D) 256 KB
 
-* ✅ **A. RDBMS is a database management system, while MySQL is a specific RDBMS software.**
-* B. MySQL is a database management system, while RDBMS is specific MySQL software.
-* C. RDBMS and MySQL are two different terms for the same concept.
-* D. RDBMS and MySQL have no relationship.
-  📘 *MySQL is one implementation of an RDBMS.*
-
----
-
-### **Q86. What is the role of the DataNode in Hadoop?**
-
-* A. Storing the metadata of the files in HDFS
-* ✅ **B. Storing the data blocks of the files in HDFS**
-* C. Executing MapReduce tasks
-* D. Allocating resources to jobs in YARN
-  📘 *DataNode stores actual data in HDFS.*
+**Explanation:** 64 KB is a commonly recommended block size in HBase.
 
 ---
 
-### **Q87. What is the role of the HBase Memstore?**
+## Question 85
+**What is the relationship between RDBMS and MySQL?**
+- **A) RDBMS is a database management system, while MySQL is a specific RDBMS software** ✅
+- B) MySQL is a database management system, while RDBMS is specific MySQL software
+- C) RDBMS and MySQL are two different terms for the same concept
+- D) RDBMS and MySQL have no relationship
 
-* ✅ **A. Stores data in memory before flushing to disk.**
-* B. Stores the write-ahead logs (WAL).
-* C. Manages data compactions.
-* D. Coordinates communication between HMaster and Region Servers.
-  📘 *Acts as a temporary write buffer.*
-
----
-
-### **Q88. What is the role of the ResourceManager in Hadoop YARN?**
-
-* A. Managing the execution of MapReduce jobs
-* B. Managing the storage of data in HDFS
-* ✅ **C. Managing the allocation of resources in the cluster**
-* D. Managing the security of the Hadoop cluster
-  📘 *ResourceManager handles cluster resource allocation.*
+**Explanation:** MySQL is one implementation of an RDBMS.
 
 ---
 
-### **Q89. What is the role of ZooKeeper in HBase?**
+## Question 86
+**What is the role of the DataNode in Hadoop?**
+- A) Storing the metadata of the files in HDFS
+- **B) Storing the data blocks of the files in HDFS** ✅
+- C) Executing MapReduce tasks
+- D) Allocating resources to jobs in YARN
 
-* A. Data storage and retrieval.
-* B. Data replication and synchronization.
-* ✅ **C. Coordination and configuration management.**
-* D. Data indexing and querying.
-  📘 *Ensures HBase coordination and failover.*
-
----
-
-### **Q90. What type of data typically comes from RDBMS?**
-
-* A. Unstructured data.
-* B. Semi-Structured data.
-* ✅ **C. Structured data.**
-* D. All of the above.
-  📘 *RDBMS is designed for structured tabular data.*
+**Explanation:** DataNode stores actual data in HDFS.
 
 ---
 
-### **Q91. Where is the archival data stored in AWS?**
+## Question 87
+**What is the role of the HBase Memstore?**
+- **A) Stores data in memory before flushing to disk** ✅
+- B) Stores the write-ahead logs (WAL)
+- C) Manages data compactions
+- D) Coordinates communication between HMaster and Region Servers
 
-* A. It is stored on S3.
-* ✅ **B. It is stored on Glaciers.**
-* C. It is stored in Athena.
-* D. It is stored on RDS.
-  📘 *Amazon Glacier is optimized for archival.*
-
----
-
-### **Q92. Where is the Hive data stored?**
-
-* ✅ **A. /usr/hive/warehouse**
-* B. /etc/bin
-* C. /user/hadoop/hive
-* D. /opt/cloudera/hive
-  📘 *Default directory for Hive warehouse.*
+**Explanation:** Acts as a temporary write buffer.
 
 ---
 
-### **Q93. Where is the location of data checkpointing in Flume?**
+## Question 88
+**What is the role of the ResourceManager in Hadoop YARN?**
+- A) Managing the execution of MapReduce jobs
+- B) Managing the storage of data in HDFS
+- **C) Managing the allocation of resources in the cluster** ✅
+- D) Managing the security of the Hadoop cluster
 
-* A. var/log/local/data
-* B. var/log/hdfs/data
-* C. var/log/conf/data
-* ✅ **D. var/log/flume/data**
-  📘 *Channel checkpoint directory.*
-
----
-
-### **Q94. Where is the Metadata of Hive stored?**
-
-* A. NameNode
-* ✅ **B. Hive Metastore**
-* C. Hcatalog
-* D. Mysql server
-  📘 *Metastore stores table schema, partitions, etc.*
+**Explanation:** ResourceManager handles cluster resource allocation.
 
 ---
 
-### **Q95. Which cache mechanism does HBase use to optimize query performance?**
+## Question 89
+**What is the role of ZooKeeper in HBase?**
+- A) Data storage and retrieval
+- B) Data replication and synchronization
+- **C) Coordination and configuration management** ✅
+- D) Data indexing and querying
 
-* ✅ **A. Least Recently Used (LRU)**
-* B. First In, First Out (FIFO)
-* C. Least Frequently Used (LFU)
-* D. Random Replacement
-  📘 *HBase uses LRU for block caching.*
-
----
-
-### **Q96. Which command is used to create a new database in MySQL?**
-
-* ✅ **A. CREATE DATABASE**
-* B. INSERT DATABASE
-* C. UPDATE DATABASE
-* D. ALTER DATABASE
-  📘 *SQL syntax to create new DB.*
+**Explanation:** Ensures HBase coordination and failover.
 
 ---
 
-### **Q97. Which command is used to create a new table in MySQL?**
+## Question 90
+**What type of data typically comes from RDBMS?**
+- A) Unstructured data
+- B) Semi-Structured data
+- **C) Structured data** ✅
+- D) All of the above
 
-* ✅ **A. CREATE TABLE**
-* B. INSERT INTO
-* C. UPDATE TABLE
-* D. ALTER TABLE
-
----
-
-### **Q98. Which command is used to create a staging table in Hive?**
-
-* A. CREATE STAGING TABLE
-* ✅ **B. CREATE TEMPORARY TABLE**
-* C. CREATE INTERIM TABLE
-* D. CREATE TABLE
-  📘 *Temporary tables are used for staging/intermediate data.*
+**Explanation:** RDBMS is designed for structured tabular data.
 
 ---
 
-### **Q99. Which command is used to create a table same as the existing table in Hive?**
+## Question 91
+**Where is the archival data stored in AWS?**
+- A) It is stored on S3
+- **B) It is stored on Glaciers** ✅
+- C) It is stored in Athena
+- D) It is stored on RDS
 
-* A. CREATE TABLE AS SELECT
-* B. CREATE TABLE FROM SELECT
-* ✅ **C. CREATE TABLE LIKE**
-* D. CREATE TABLE AS
-  📘 *LIKE copies structure, not data.*
+**Explanation:** Amazon Glacier is optimized for archival.
+
+---
+
+## Question 92
+**Where is the Hive data stored?**
+- **A) /usr/hive/warehouse** ✅
+- B) /etc/bin
+- C) /user/hadoop/hive
+- D) /opt/cloudera/hive
+
+**Explanation:** Default directory for Hive warehouse.
 
 ---
 
-### **Q100. Which command is used to create an external table in Hive with a specified location?**
+## Question 93
+**Where is the location of data checkpointing in Flume?**
+- A) var/log/local/data
+- B) var/log/hdfs/data
+- C) var/log/conf/data
+- **D) var/log/flume/data** ✅
 
-* ✅ **A. CREATE EXTERNAL TABLE**
-* B. CREATE TABLE
-* C. CREATE HIVE TABLE
-* D. CREATE EXTERNAL HIVE TABLE
+**Explanation:** Channel checkpoint directory.
 
 ---
+
+## Question 94
+**Where is the Metadata of Hive stored?**
+- A) NameNode
+- **B) Hive Metastore** ✅
+- C) Hcatalog
+- D) Mysql server
+
+**Explanation:** Metastore stores table schema, partitions, etc.
+
+---
+
+## Question 95
+**Which cache mechanism does HBase use to optimize query performance?**
+- **A) Least Recently Used (LRU)** ✅
+- B) First In, First Out (FIFO)
+- C) Least Frequently Used (LFU)
+- D) Random Replacement
+
+**Explanation:** HBase uses LRU for block caching.
+
+---
+
+## Question 96
+**Which command is used to create a new database in MySQL?**
+- **A) CREATE DATABASE** ✅
+- B) INSERT DATABASE
+- C) UPDATE DATABASE
+- D) ALTER DATABASE
+
+**Explanation:** SQL syntax to create new DB.
+
+---
+
+## Question 97
+**Which command is used to create a new table in MySQL?**
+- **A) CREATE TABLE** ✅
+- B) INSERT INTO
+- C) UPDATE TABLE
+- D) ALTER TABLE
+
+**Explanation:** Standard SQL table creation command.
+
+---
+
+## Question 98
+**Which command is used to create a staging table in Hive?**
+- A) CREATE STAGING TABLE
+- **B) CREATE TEMPORARY TABLE** ✅
+- C) CREATE INTERIM TABLE
+- D) CREATE TABLE
+
+**Explanation:** Temporary tables are used for staging/intermediate data.
+
+---
+
+## Question 99
+**Which command is used to create a table same as the existing table in Hive?**
+- A) CREATE TABLE AS SELECT
+- B) CREATE TABLE FROM SELECT
+- **C) CREATE TABLE LIKE** ✅
+- D) CREATE TABLE AS
+
+**Explanation:** LIKE copies structure, not data.
+
+---
+
+## Question 100
+**Which command is used to create an external table in Hive with a specified location?**
+- **A) CREATE EXTERNAL TABLE** ✅
+- B) CREATE TABLE
+- C) CREATE HIVE TABLE
+- D) CREATE EXTERNAL HIVE TABLE
+
+**Explanation:** External tables reference data stored outside Hive warehouse.
+
 
 ### **Q101. Which command is used to create an external table in Hive with the ORC file format?**
 
