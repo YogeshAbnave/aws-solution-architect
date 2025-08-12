@@ -1,0 +1,411 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Unified template for SageMaker Notebook with Stable Diffusion deployment and Generative AI web application
+
+Parameters:
+  LambdaCodeS3Bucket:
+    Type: String
+    Description: S3 bucket where the Lambda code, layer, and API spec are stored (e.g., my-unified-lambda-code-bucket).
+
+Resources:
+  # --- SageMaker Resources (Created First) ---
+  SageMakerExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: sagemaker-execution-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - sagemaker.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSageMakerFullAccess
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+
+  SageMakerLifecycleConfig:
+    Type: AWS::SageMaker::NotebookInstanceLifecycleConfig
+    Properties:
+      NotebookInstanceLifecycleConfigName: initcustomdeploy
+      OnCreate:
+        - Content:
+            Fn::Base64: !Sub |
+              #!/bin/bash
+              set -e
+              
+              # Create the custom Python deployment script
+              cat > /home/ec2-user/deploy_model.py << 'SCRIPT'
+              import boto3
+              import json
+              import sagemaker
+              import os
+              import matplotlib.pyplot as plt
+              import numpy as np
+              from sagemaker import image_uris, model_uris, script_uris
+              from sagemaker.model import Model
+              from sagemaker.predictor import Predictor
+              from sagemaker.utils import name_from_base
+              from sagemaker import get_execution_role
+
+              # Get the IAM role attached to the notebook instance
+              aws_role = get_execution_role()
+              
+              # Get the default SageMaker session
+              sess = sagemaker.Session()
+
+              # Get available S3 buckets (no hardcoded credentials needed)
+              s3 = boto3.resource('s3')
+              for bucket in s3.buckets.all():
+                  if bucket.name.startswith('genai-project-accomplish'):
+                      mybucket = bucket.name
+                      print(f"Using bucket: {mybucket}")
+                      break
+
+              model_id, model_version = "model-txt2img-stabilityai-stable-diffusion-v2", "1.2.*"
+
+              endpoint_name = name_from_base(f"cloudage-endpoint-text-to-image-{model_id}")
+              model_name = name_from_base(f"cloudage-model-")
+
+              inference_instance_type = "ml.g5.2xlarge"
+
+              deploy_image_uri = image_uris.retrieve(
+                  region=None,
+                  framework=None,
+                  image_scope="inference",
+                  model_id=model_id,
+                  model_version=model_version,
+                  instance_type=inference_instance_type,
+                  sagemaker_session=sess,
+              )
+
+              deploy_source_uri = script_uris.retrieve(
+                  model_id=model_id,
+                  model_version=model_version,
+                  script_scope="inference"
+              )
+
+              model_uri = model_uris.retrieve(
+                  model_id=model_id,
+                  model_version=model_version,
+                  model_scope="inference"
+              )
+
+              env = {
+                  "MMS_MAX_RESPONSE_SIZE": '20000000',
+              }
+
+              model = Model(
+                  image_uri=deploy_image_uri,
+                  source_dir=deploy_source_uri,
+                  model_data=model_uri,
+                  entry_point="inference.py",
+                  role=aws_role,
+                  name=model_name,
+                  env=env,
+                  sagemaker_session=sess,
+              )
+
+              base_model_predictor = model.deploy(
+                  initial_instance_count=1,
+                  instance_type=inference_instance_type,
+                  endpoint_name=endpoint_name,
+                  model_name=model_name,
+              )
+
+              model_predictor = Predictor(endpoint_name=endpoint_name)
+
+              def query(model_predictor, text):
+                  encoded_text = text.encode("utf-8")
+                  query_response = model_predictor.predict(
+                      encoded_text,
+                      {
+                          "ContentType": "application/x-text",
+                          "Accept": "application/json",
+                      },
+                  )
+                  return query_response
+
+              def parse_response(query_response):
+                  response_dict = json.loads(query_response)
+                  return response_dict["generated_image"], response_dict["prompt"]
+
+              def display_img_and_prompt(img, prmpt):
+                  plt.figure(figsize=(12, 12))
+                  plt.imshow(np.array(img))
+                  plt.axis("off")
+                  plt.title(prmpt)
+                  plt.show()
+
+              text = "cottage in impressionist style"
+              query_response = query(model_predictor, text)
+              img, prmpt = parse_response(query_response)
+              display_img_and_prompt(img, prmpt)
+
+              SCRIPT
+              
+              chown ec2-user:ec2-user /home/ec2-user/deploy_model.py
+
+              sudo -u ec2-user -i nohup python3 /home/ec2-user/deploy_model.py > /home/ec2-user/deployment.log 2>&1 &
+            
+  SageMakerNotebookInstance:
+    Type: AWS::SageMaker::NotebookInstance
+    Properties:
+      NotebookInstanceName: CustomDeployNotebook
+      InstanceType: ml.t3.large
+      RoleArn: !GetAtt SageMakerExecutionRole.Arn
+      LifecycleConfigName: initcustomdeploy
+
+  # --- S3 Bucket (Created Early for Env Vars) ---
+  WebsiteBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: generative-ai-text-to-image-bucket-2025
+      AccessControl: Private
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      VersioningConfiguration:
+        Status: Enabled
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: error.html
+
+  # --- Web Application Resources ---
+  CloudFrontOAC:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: "generative-ai-text-to-image-OAC"
+        Description: OAC for secure CloudFront-S3 access
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  CachePolicy:
+    Type: AWS::CloudFront::CachePolicy
+    Properties:
+      CachePolicyConfig:
+        Name: "SimpleCachePolicy"
+        DefaultTTL: 86400
+        MaxTTL: 31536000
+        MinTTL: 1
+        ParametersInCacheKeyAndForwardedToOrigin:
+          EnableAcceptEncodingGzip: true
+          EnableAcceptEncodingBrotli: true
+          HeadersConfig:
+            HeaderBehavior: "none"
+          CookiesConfig:
+            CookieBehavior: "none"
+          QueryStringsConfig:
+            QueryStringBehavior: "none"
+
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        DefaultRootObject: index.html
+        HttpVersion: http3
+        Comment: "GenerativeAI-TextToImage-Distribution"
+        Origins:
+          - Id: S3Origin
+            DomainName: !GetAtt WebsiteBucket.RegionalDomainName
+            S3OriginConfig: {}
+            OriginAccessControlId: !Ref CloudFrontOAC
+        DefaultCacheBehavior:
+          AllowedMethods: ["GET", "HEAD"]
+          CachedMethods: ["GET", "HEAD"]
+          TargetOriginId: S3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          CachePolicyId: !Ref CachePolicy
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: true
+        PriceClass: PriceClass_100
+        CustomErrorResponses:
+          - ErrorCode: 404
+            ResponseCode: 404
+            ResponsePagePath: /error.html
+          - ErrorCode: 403
+            ResponseCode: 403
+            ResponsePagePath: /error.html
+
+  S3BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref WebsiteBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowCloudFrontServicePrincipalReadOnly
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: "s3:GetObject"
+            Resource: "arn:aws:s3:::generative-ai-text-to-image-bucket-2025/*"
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}"
+
+  # --- Backend Resources ---
+  PillowLayer:
+    Type: AWS::Lambda::LayerVersion
+    Properties:
+      LayerName: PillowLayer
+      Description: Pillow Layer for image processing
+      Content:
+        S3Bucket: !Ref LambdaCodeS3Bucket
+        S3Key: pillowlayer.zip
+      CompatibleRuntimes:
+        - python3.11
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: LambdaImageProcessingRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        - arn:aws:iam::aws:policy/AmazonSageMakerFullAccess
+        - arn:aws:iam::aws:policy/CloudFrontFullAccess   # corrected here
+        - arn:aws:iam::aws:policy/AWSLambda_FullAccess
+
+  StartProcessingLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+     LogGroupName: !Sub "/aws/lambda/${StartProcessingFunction}"
+     RetentionInDays: 7
+
+  EndpointCallLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${EndpointCallFunction}"
+      RetentionInDays: 7
+
+  DisplayImageLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${DisplayImageFunction}"
+      RetentionInDays: 7
+
+  StartProcessingFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: StartProcessingFunction
+      Runtime: python3.11
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Handler: start_process_function.lambda_handler
+      Code:
+        S3Bucket: !Ref LambdaCodeS3Bucket
+        S3Key: producer_function.zip
+      MemorySize: 512
+      Timeout: 300
+      Environment:
+        Variables:
+          PROCESSING_LAMBDA_NAME: EndpointCallFunction
+          BUCKET_NAME: !Ref WebsiteBucket
+      Layers:
+        - !Ref PillowLayer
+
+  EndpointCallFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: EndpointCallFunction
+      Runtime: python3.11
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Handler: endpoint_call_function.lambda_handler
+      Code:
+        S3Bucket: !Ref LambdaCodeS3Bucket
+        S3Key: processor_function.zip
+      MemorySize: 512
+      Timeout: 300
+      Environment:
+        Variables:
+          ENDPOINT_NAME: !Ref SageMakerNotebookInstance
+          BUCKET_NAME: !Ref WebsiteBucket
+      Layers:
+        - !Ref PillowLayer
+
+  DisplayImageFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: DisplayImageFunction
+      Runtime: python3.11
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Handler: display_image.lambda_handler
+      Code:
+        S3Bucket: !Ref LambdaCodeS3Bucket
+        S3Key: consumer_function.zip
+      MemorySize: 512
+      Timeout: 300
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref WebsiteBucket
+      Layers:
+        - !Ref PillowLayer
+
+  ImageApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: GenerativeAIImageAPI
+      BodyS3Location:
+        Bucket: !Ref LambdaCodeS3Bucket
+        Key: text-image-generative-ai-api-prod-swagger-apigateway.json
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+
+  ApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn: ImageApi
+    Properties:
+      RestApiId: !Ref ImageApi
+      StageName: prod
+
+  ApiInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt StartProcessingFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ImageApi}//*/*
+
+Outputs:
+  NotebookName:
+    Description: Name of the SageMaker Notebook Instance
+    Value: !Ref SageMakerNotebookInstance
+  ExecutionRoleArn:
+    Description: Execution Role for SageMaker
+    Value: !GetAtt SageMakerExecutionRole.Arn
+  S3BucketName:
+    Value: !Ref WebsiteBucket
+    Description: S3 Bucket Name for the frontend website files.
+  CloudFrontURL:
+    Value: !Sub "https://${CloudFrontDistribution.DomainName}"
+    Description: The public URL for the web application.
+  ApiGatewayUrl:
+    Value: !Sub "https://${ImageApi}.execute-api.${AWS::Region}.amazonaws.com/prod"
+    Description: URL of the deployed API Gateway for the backend.
+  StartProcessingFunctionArn:
+    Description: ARN of the StartProcessing Lambda Function
+    Value: !GetAtt StartProcessingFunction.Arn
+  EndpointCallFunctionArn:
+    Description: ARN of the Endpoint Call Lambda Function
+    Value: !GetAtt EndpointCallFunction.Arn
+  DisplayImageFunctionArn:
+    Description: ARN of the Display Image Lambda Function
+    Value: !GetAtt DisplayImageFunction.Arn

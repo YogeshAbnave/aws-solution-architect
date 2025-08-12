@@ -1,0 +1,458 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Unified deployment for GenAI solution with SageMaker, Lambda, API Gateway, and frontend hosting
+
+Parameters:
+  LambdaS3Bucket:
+    Type: String
+    Description: S3 bucket with your Lambda deployment package
+  LambdaS3Key:
+    Type: String
+    Description: S3 key for the Lambda deployment package
+
+Resources:
+  # IAM Roles - Define these first to avoid circular dependencies
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+          Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSageMakerFullAccess
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+      Policies:
+        - PolicyName: LambdaBasicExecution
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: arn:aws:logs:*:*:*
+              - Effect: Allow
+                Action:
+                  - ec2:CreateNetworkInterface
+                  - ec2:DescribeNetworkInterfaces
+                  - ec2:DeleteNetworkInterface
+                Resource: "*"
+      Tags:
+        - Key: Name
+          Value: GenAI-Lambda-Role
+
+  SageMakerExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: sagemaker.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSageMakerFullAccess
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+      Path: /
+      Tags:
+        - Key: Name
+          Value: SageMaker-Execution-Role
+
+  S3ReadOnlyRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: S3ReadOnlyAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: s3:GetObject
+                Resource: !Sub "arn:aws:s3:::${LambdaS3Bucket}/*"
+      Tags:
+        - Key: Name
+          Value: GenAI-S3-ReadOnly-Role
+
+  # VPC and Networking Resources
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: GenAI-VPC
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: GenAI-IGW
+
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.1.0/24
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: !Select [0, !GetAZs '']
+      Tags:
+        - Key: Name
+          Value: GenAI-Public-Subnet-1
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.2.0/24
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: !Select [1, !GetAZs '']
+      Tags:
+        - Key: Name
+          Value: GenAI-Public-Subnet-2
+
+  PrivateSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.3.0/24
+      AvailabilityZone: !Select [0, !GetAZs '']
+      Tags:
+        - Key: Name
+          Value: GenAI-Private-Subnet
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: GenAI-Public-Route-Table
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: AttachGateway
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref PublicRouteTable
+
+  PublicSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet2
+      RouteTableId: !Ref PublicRouteTable
+
+  # CloudFront Resources
+  CloudFrontOAC:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: GenAI-OAC
+        Description: CloudFront OAC for secure S3 access
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+        
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        DefaultRootObject: index.html
+        Origins:
+          - Id: S3Origin
+            DomainName: !Sub "${LambdaS3Bucket}.s3.${AWS::Region}.amazonaws.com"
+            S3OriginConfig: {}
+            OriginAccessControlId: !Ref CloudFrontOAC
+        DefaultCacheBehavior:
+          TargetOriginId: S3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: [GET, HEAD]
+          CachedMethods: [GET, HEAD]
+          ForwardedValues:
+            QueryString: false
+            Cookies:
+              Forward: none
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: true
+        HttpVersion: http3
+
+  S3BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    DependsOn: CloudFrontDistribution
+    Properties:
+      Bucket: !Ref LambdaS3Bucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: 
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub "arn:aws:s3:::${LambdaS3Bucket}/*"
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution.Id}"
+
+  # Lambda function to deploy the model
+  ModelDeploymentFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: GenAILLMFunction-Deployment
+      Runtime: python3.9
+      Handler: index.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 900
+      Code:
+        ZipFile: |
+          import json
+          import boto3
+          import cfnresponse
+          import logging
+          
+          logger = logging.getLogger()
+          logger.setLevel(logging.INFO)
+          
+          def lambda_handler(event, context):
+              try:
+                  sagemaker = boto3.client('sagemaker')
+                  
+                  if event['RequestType'] == 'Create':
+                      model_id = event['ResourceProperties']['ModelId']
+                      instance_type = event['ResourceProperties']['InstanceType']
+                      endpoint_name = event['ResourceProperties']['EndpointName']
+                      execution_role = event['ResourceProperties']['ExecutionRole']
+                      
+                      model_name = f"{endpoint_name}-model"
+                      endpoint_config_name = f"{endpoint_name}-config"
+                      
+                      model_response = sagemaker.create_model(
+                          ModelName=model_name,
+                          PrimaryContainer={
+                              'Image': '763104351884.dkr.ecr.us-east-1.amazonaws.com/huggingface-pytorch-tgi-inference:2.0.1-tgi1.1.0-gpu-py39-cu118-ubuntu20.04',
+                              'ModelDataUrl': f's3://jumpstart-cache-prod-us-east-1/huggingface-infer/{model_id}/artifacts/inference/v1.0.0/',
+                              'Environment': {
+                                  'HF_MODEL_ID': '/opt/ml/model',
+                                  'HF_TASK': 'text-generation',
+                                  'SAGEMAKER_CONTAINER_LOG_LEVEL': '20',
+                                  'SAGEMAKER_REGION': 'us-east-1'
+                              }
+                          },
+                          ExecutionRoleArn=execution_role
+                      )
+                      
+                      endpoint_config_response = sagemaker.create_endpoint_config(
+                          EndpointConfigName=endpoint_config_name,
+                          ProductionVariants=[
+                              {
+                                  'VariantName': 'primary',
+                                  'ModelName': model_name,
+                                  'InitialInstanceCount': 1,
+                                  'InstanceType': instance_type,
+                                  'InitialVariantWeight': 1
+                              }
+                          ]
+                      )
+                      
+                      endpoint_response = sagemaker.create_endpoint(
+                          EndpointName=endpoint_name,
+                          EndpointConfigName=endpoint_config_name
+                      )
+                      
+                      waiter = sagemaker.get_waiter('endpoint_in_service')
+                      waiter.wait(EndpointName=endpoint_name)
+                      
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, {
+                          'EndpointName': endpoint_name,
+                          'ModelName': model_name,
+                          'EndpointConfigName': endpoint_config_name
+                      })
+                      
+                  elif event['RequestType'] == 'Delete':
+                      endpoint_name = event['ResourceProperties']['EndpointName']
+                      model_name = f"{endpoint_name}-model"
+                      endpoint_config_name = f"{endpoint_name}-config"
+                      
+                      try:
+                          sagemaker.delete_endpoint(EndpointName=endpoint_name)
+                          sagemaker.delete_endpoint_config(EndpointConfigName=endpoint_config_name)
+                          sagemaker.delete_model(ModelName=model_name)
+                      except Exception as e:
+                          logger.error(f"Error during cleanup: {str(e)}")
+                      
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+                      
+                  else:
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+                      
+              except Exception as e:
+                  logger.error(f"Error: {str(e)}")
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {})
+
+  # Custom resource to deploy the model
+  ModelDeployment:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !GetAtt ModelDeploymentFunction.Arn
+      ModelId: 'huggingface-llm-falcon-7b-instruct-bf16'
+      InstanceType: 'ml.g5.2xlarge'
+      EndpointName: 'cloudage-falcon-7b-endpoint'
+      ExecutionRole: !GetAtt SageMakerExecutionRole.Arn
+
+
+  # Lambda Function
+  GenAILambdaFunction:
+    Type: AWS::Lambda::Function
+    DependsOn: [LambdaExecutionRole, ModelDeployment]
+    Properties:
+      FunctionName: GenAILLMFunction
+      Runtime: python3.11
+      Handler: lambda_function.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        S3Bucket: !Ref LambdaS3Bucket
+        S3Key: !Ref LambdaS3Key
+      Timeout: 30
+      Environment:
+        Variables:
+          ENDPOINT_NAME: !GetAtt ModelDeployment.EndpointName
+
+  # API Gateway Resources
+  ApiGateway:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: generative-ai-Rest-api
+      Description: API for GenAI solution
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      Body:
+        swagger: "2.0"
+        info:
+          version: "1.0"
+          title: "generative-ai-Rest-api"
+        basePath: "/prod"
+        schemes:
+          - "https"
+        paths:
+          /:
+            options:
+              consumes:
+                - "application/json"
+              responses:
+                "204":
+                  description: "204 response"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      type: "string"
+                    Access-Control-Allow-Methods:
+                      type: "string"
+                    Access-Control-Allow-Headers:
+                      type: "string"
+              x-amazon-apigateway-integration:
+                type: "mock"
+                responses:
+                  default:
+                    statusCode: "204"
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Methods: "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'"
+                      method.response.header.Access-Control-Allow-Origin: "'*'"
+                requestTemplates:
+                  application/json: "{ statusCode: 200 }"
+                passthroughBehavior: "when_no_match"
+          /summarize:
+            post:
+              responses:
+                "200":
+                  description: "200 response"
+              x-amazon-apigateway-integration:
+                type: "aws_proxy"
+                httpMethod: "POST"
+                uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GenAILambdaFunction.Arn}/invocations"
+                passthroughBehavior: "when_no_match"
+            options:
+              consumes:
+                - "application/json"
+              responses:
+                "204":
+                  description: "204 response"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      type: "string"
+                    Access-Control-Allow-Methods:
+                      type: "string"
+                    Access-Control-Allow-Headers:
+                      type: "string"
+              x-amazon-apigateway-integration:
+                type: "mock"
+                responses:
+                  default:
+                    statusCode: "204"
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Methods: "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'"
+                      method.response.header.Access-Control-Allow-Origin: "'*'"
+                requestTemplates:
+                  application/json: "{ statusCode: 200 }"
+                passthroughBehavior: "when_no_match"
+        x-amazon-apigateway-gateway-responses:
+          DEFAULT_5XX:
+            statusCode: 500
+            responseParameters:
+              gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+
+  ApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn: ApiGateway
+    Properties:
+      RestApiId: !Ref ApiGateway
+      StageName: prod
+
+  LambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref GenAILambdaFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGateway}/*/POST/summarize"
+
+Outputs:
+  ApiGatewayUrl:
+    Description: URL of the API Gateway endpoint
+    Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/prod"
+  
+  CloudFrontDistributionDomain:
+    Description: Domain name of the CloudFront distribution for the frontend
+    Value: !GetAtt CloudFrontDistribution.DomainName
+
+  CloudFrontDistributionId:
+    Description: ID of the CloudFront distribution for the frontend
+    Value: !Ref CloudFrontDistribution
