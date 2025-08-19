@@ -1,0 +1,1230 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+# NOTE: this template depends on an exported value from the vscode-template stack with the name 'WorkshopAssetsBucket'
+Parameters:
+  WorkshopStudioAssetsBucket:
+    Description: Assets bucket name
+    Type: String
+  WorkshopStudioAssetsBucketPrefix:
+    Description: Assets bucket prefix
+    Type: String
+  EmbeddingsModel:
+    Description: Model ID of Embeddings Model
+    Type: String
+    Default: "amazon.titan-embed-text-v2:0"
+  LanguageModel:
+    Description: Model ID of Language Model
+    Type: String
+    Default: "amazon.nova-pro-v1:0"
+  AOSSCollectionName:
+    Description: Name of AOSS Collection
+    Type: String
+    Default: "bedrock-knowledge-base"
+  AOSSIndexName:
+    Description: Name of AOSS Index
+    Type: String
+    Default: "bedrock-knowledge-base-index"
+  AOSSVectorName:
+    Description: Name of AOSS Index
+    Type: String
+    Default: "bedrock-knowledge-base-vector" # NOTE: this value must match the name of the vector in the IndexCreator Lambda function code.
+  ParticipantRoleArn:
+    Description: Arn of participant IAM Role
+    Type: String
+
+Resources:
+  # Customer Managed KMS Key for AOSS and DynamoDB
+  CustomerManagedKey:
+    Type: AWS::KMS::Key
+    Properties:
+      KeyPolicy:
+        Version: 2012-10-17
+        Id: kms-key-policy
+        Statement:
+          - Sid: Enable IAM User Permissions
+            Effect: Allow
+            Principal:
+              AWS: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:root
+            Action: 'kms:*'
+            Resource: '*'
+
+  PatientInfoTable:
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W78
+            reason: Adding backup to this table that has sample data adds unnecessary complexity
+          - id: W28
+            reason: Table has explicit name to make it easier to locate in the CloudWatch console.
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: healthcarepatientinfo
+      BillingMode: "PROVISIONED"      
+      AttributeDefinitions:
+        - AttributeName: name
+          AttributeType: 'S'
+      KeySchema:
+        - AttributeName: name
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      SSESpecification:
+        KMSMasterKeyId: !Ref CustomerManagedKey
+        SSEEnabled: true
+        SSEType: KMS
+
+  PatientPhiInfoTable:
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W78
+            reason: Adding backup to this table that has sample data adds unnecessary complexity
+          - id: W28
+            reason: Table has explicit name to make it easier to locate in the CloudWatch console.
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: healthcarepatientphiinfo
+      BillingMode: "PROVISIONED"      
+      AttributeDefinitions:
+        - AttributeName: name
+          AttributeType: 'S'
+      KeySchema:
+        - AttributeName: name
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      SSESpecification:
+        KMSMasterKeyId: !Ref CustomerManagedKey
+        SSEEnabled: true
+        SSEType: KMS
+
+  # Lambda custom resource to populate the DynamoDB tables
+  DynamoDBWriterLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - !Sub lambda.${AWS::URLSuffix}
+          Action:
+          - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDB
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: AllowDynamoDBWrite
+                Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                  - dynamodb:BatchWriteItem
+                  - dynamodb:UpdateItem
+                Resource: 
+                  - !GetAtt PatientInfoTable.Arn
+                  - !GetAtt PatientPhiInfoTable.Arn
+                  - !GetAtt UserTable.Arn
+              - Sid: AllowKMSActions
+                Effect: Allow
+                Action:
+                  - kms:DescribeKey
+                  - kms:Encrypt
+                  - kms:Decrypt
+                  - kms:ReEncrypt*
+                  - kms:GenerateDataKey
+                  - kms:GenerateDataKeyWithoutPlaintext                
+                Resource:
+                  - !GetAtt CustomerManagedKey.Arn
+
+  DynamoDBWriterLambda:
+    Type: AWS::Lambda::Function
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W58
+            reason: Warning incorrectly reported. The role associated with the Lambda function has the AWSLambdaBasicExecutionRole managed policy attached, which includes permission to write CloudWatch Logs. See https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AWSLambdaBasicExecutionRole.html
+          - id: W89
+            reason: CloudFormation custom function does not need the scaffolding of a VPC, to do so would add unnecessary complexity
+          - id: W92
+            reason: CloudFormation custom function does not need reserved concurrent executions, to do so would add unnecessary complexity
+    Properties:
+      Description: Writes patient records to the DynamoDB tables
+      Handler: index.lambda_handler
+      Runtime: python3.11
+      MemorySize: 128
+      Timeout: 10
+      Architectures:
+        - arm64
+      Role: !GetAtt DynamoDBWriterLambdaRole.Arn
+      Code:
+        ZipFile: |
+          import boto3
+          import json
+          import cfnresponse
+          import logging
+          from botocore.exceptions import ClientError
+
+          logger = logging.getLogger()
+          logger.setLevel(logging.INFO)
+
+          # Sample records
+          john_doe_contact = {
+            "name": "john doe",
+            "address": "111, First St, Boston",
+            "dob": "01-01-2001",
+            "phonenumber": "111-111-1111"
+          }
+
+          jane_doe_contact = {
+            "name": "jane doe",
+            "address": "222, Second St, Boston",
+            "dob": "02-02-2002",
+            "phonenumber": "222-222-2222"
+          }
+
+          john_doe_medical = {
+            "name": "john doe",
+            "bloodpressure": "110/10",
+            "bloodtype": "A+",
+            "hdl": 101,
+            "ldl": 102,
+            "triglycerides": 103
+          }
+
+          jane_doe_medical = {
+            "name": "jane doe",
+            "bloodpressure": "220/20",
+            "bloodtype": "B+",
+            "hdl": 201,
+            "ldl": 202,
+            "triglycerides": 203
+          }
+
+          def write_to_table(table, data):
+              response = table.put_item(Item=data)
+
+          def cfn_response_error(event, context, message):
+              cfnresponse.send(event, context, cfnresponse.FAILED, responseData={}, reason=message)
+
+          def lambda_handler(event, context):
+            # Initialize DynamoDB client
+            dynamodb = boto3.resource('dynamodb')
+            patient_info_table_name = event['ResourceProperties']['PatientInfoTable']
+            patient_medical_info_table_name = event['ResourceProperties']['PatientMedicalInfoTable']
+            user_data_table_name =  event['ResourceProperties']['UserTable']
+
+            # Get the DynamoDB table objects
+            patient_info_table = dynamodb.Table(patient_info_table_name)
+            patient_medical_info_table = dynamodb.Table(patient_medical_info_table_name)
+            user_table = dynamodb.Table(user_data_table_name)
+
+
+            try:
+              write_to_table(patient_info_table, john_doe_contact)
+              write_to_table(patient_medical_info_table, john_doe_medical)
+              write_to_table(patient_info_table, jane_doe_contact)
+              write_to_table(patient_medical_info_table, jane_doe_medical)
+              logger.info('Successfully added patient records')
+
+              # Define user data to be added to DynamoDB
+
+              write_to_table(user_table, {"name": "Alice", "role":"Receptionist", "status": "enabled"})
+              write_to_table(user_table, {"name": "Christine", "role":"Doctor", "status": "enabled"})
+              write_to_table(user_table, {"name": "Bob",  "role":"Doctor", "status": "disabled"})
+              
+              cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData={}, reason='OK')
+            except ClientError as e:
+                logger.error(e.response['Error']['Message'])
+                cfn_response_error(event, context, f"Error writing to DynamoDB: {str(e)}")
+            except KeyError as e:
+                logger.error(f"Missing key in event: {str(e)}")
+                cfn_response_error(event, context, f"Missing key in event: {str(e)}")
+            except Exception as e:
+                logger.error(f"Unexpected error: {str(e)}")
+                cfn_response_error(event, context, f"Unexpected error: {str(e)}")
+
+  DynamoDBWriter:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !GetAtt DynamoDBWriterLambda.Arn
+      ServiceTimeout: 20
+      PatientInfoTable: !Ref PatientInfoTable
+      PatientMedicalInfoTable: !Ref PatientPhiInfoTable
+      UserTable: !Ref UserTable
+
+  HealthCareAgentLambda:
+    Type: AWS::Lambda::Function
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W58
+            reason: Warning incorrectly reported. The role associated with the Lambda function has the AWSLambdaBasicExecutionRole managed policy attached, which includes permission to write CloudWatch Logs. See https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AWSLambdaBasicExecutionRole.html
+          - id: W89
+            reason: CloudFormation custom function does not need the scaffolding of a VPC, to do so would add unnecessary complexity
+          - id: W92
+            reason: CloudFormation custom function does not need reserved concurrent executions, to do so would add unnecessary complexity
+    Properties:
+      Description: Healthcare Agent Lambda
+      Handler: HealthCareAgentLambda.lambda_handler
+      Role: !GetAtt HealthCareLambdaRole.Arn
+      Code:
+        S3Bucket: !Ref WorkshopStudioAssetsBucket
+        S3Key: !Sub "${WorkshopStudioAssetsBucketPrefix}HealthCareAgent-ActionGroupLambda.zip"
+      Runtime: python3.12
+      Timeout: 60
+
+  HealthCareLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - !Sub lambda.${AWS::URLSuffix}
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: HealthCareLambdaPolicy
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:BatchGetItem
+                  - dynamodb:List*
+                  - dynamodb:GetItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                  - dynamodb:Describe*
+                Resource:
+                  - !GetAtt PatientInfoTable.Arn
+                  - !GetAtt PatientPhiInfoTable.Arn
+              - Sid: AllowKMSActions
+                Effect: Allow
+                Action:
+                  - kms:DescribeKey
+                  - kms:Encrypt
+                  - kms:Decrypt
+                  - kms:ReEncrypt*
+                  - kms:GenerateDataKey
+                  - kms:GenerateDataKeyWithoutPlaintext
+                Resource:
+                  - !GetAtt CustomerManagedKey.Arn
+
+  HealthCareLambdaPermissionBedrockAgent:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt HealthCareAgentLambda.Arn
+      Principal: !Sub bedrock.${AWS::URLSuffix}
+      SourceArn: !GetAtt BedrockAgent.AgentArn
+
+  BedrockKnowledgeBaseRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - !Sub bedrock.${AWS::URLSuffix}
+            Action:
+              - sts:AssumeRole
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+              ArnLike:
+                aws:SourceArn: !Sub arn:${AWS::Partition}:bedrock:${AWS::Region}:${AWS::AccountId}:knowledge-base/*
+      Policies:
+        - PolicyName: BedrockS3AOSSPolicy
+          PolicyDocument:
+            Version: '2012-10-17'          
+            Statement:
+              - Sid: AllowInvokeModel
+                Effect: Allow
+                Action:
+                  - bedrock:InvokeModel
+                Resource:
+                  - !Sub arn:${AWS::Partition}:bedrock:${AWS::Region}::foundation-model/${EmbeddingsModel}
+              - Sid: AllowS3List
+                Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource:
+                  - !Sub 
+                    - 'arn:${AWS::Partition}:s3:::${WorkshopAssetsBucket}'
+                    - WorkshopAssetsBucket: !ImportValue 'WorkshopAssetsBucket'
+                Condition:
+                  StringEquals:
+                    aws:ResourceAccount: !Ref AWS::AccountId
+              - Sid: AllowS3Get
+                Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource:
+                  - !Sub 
+                    - 'arn:${AWS::Partition}:s3:::${WorkshopAssetsBucket}/*'
+                    - WorkshopAssetsBucket: !ImportValue 'WorkshopAssetsBucket'
+                Condition:
+                  StringEquals:
+                    aws:ResourceAccount: !Ref AWS::AccountId
+
+  AOSSDataPlaneAccessPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: InvokeAOSSDataPlane
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AOSSDataPlaneAll
+            Effect: Allow
+            Action:
+              - 'aoss:APIAccessAll'
+            Resource:
+              - !GetAtt AOSSCollection.Arn
+      Roles:
+        - !Ref BedrockKnowledgeBaseRole
+        - !Ref IndexCreatorLambdaRole
+
+  AOSSCollection:
+    Type: 'AWS::OpenSearchServerless::Collection'
+    Properties:
+      Name: !Ref AOSSCollectionName
+      Type: VECTORSEARCH
+      Description: Bedrock Knowledge Base Search collection
+    DependsOn: 
+      - AOSSEncryptionPolicy
+      - AOSSNetworkPolicy
+      - AOSSDataAccessPolicy
+
+  AOSSEncryptionPolicy:
+    Type: 'AWS::OpenSearchServerless::SecurityPolicy'
+    Properties:
+      Name: workshop-encryption-policy
+      Type: encryption
+      Description: 'Encryption policy for AOSS collection'
+      Policy: 
+        !Sub |
+          {
+            "Rules": [
+              {
+                "ResourceType": "collection",
+                "Resource": ["collection/${AOSSCollectionName}"]
+              }
+            ],
+            "AWSOwnedKey": false,
+            "KmsARN": "${CustomerManagedKey.Arn}"
+          }
+
+  AOSSNetworkPolicy:
+    Type: 'AWS::OpenSearchServerless::SecurityPolicy'
+    Properties:
+      Name: workshop-network-policy
+      Type: network
+      Description: 'Network policy for AOSS collection'
+      Policy: 
+        !Sub |
+          [
+            {
+              "Rules": [
+                {
+                  "ResourceType": "collection",
+                  "Resource": ["collection/${AOSSCollectionName}"]
+                },
+                {
+                  "ResourceType": "dashboard",
+                  "Resource": ["collection/${AOSSCollectionName}"]
+                }
+              ],
+              "AllowFromPublic": true
+            }
+          ]
+
+  AOSSDataAccessPolicy:
+    Type: 'AWS::OpenSearchServerless::AccessPolicy'
+    Properties:
+      Name: workshop-data-access-policy
+      Type: data
+      Description: 'Access for Bedrock and IndexCreator'
+      Policy: 
+        !Sub >
+          [
+            {
+              "Rules": [
+                {
+                  "ResourceType": "index",
+                  "Resource": ["index/${AOSSCollectionName}/*"],
+                  "Permission": [
+                    "aoss:UpdateIndex",
+                    "aoss:DescribeIndex",
+                    "aoss:ReadDocument",
+                    "aoss:WriteDocument",
+                    "aoss:CreateIndex",
+                    "aoss:DeleteIndex"
+                  ]
+                },
+                {
+                  "ResourceType": "collection",
+                  "Resource": ["collection/${AOSSCollectionName}"],
+                  "Permission": [
+                    "aoss:DescribeCollectionItems",
+                    "aoss:CreateCollectionItems",
+                    "aoss:UpdateCollectionItems"
+                  ]
+                }
+              ],
+              "Principal": [
+                "${BedrockKnowledgeBaseRole.Arn}",
+                "${IndexCreatorLambdaRole.Arn}"
+              ]
+            }
+          ]
+
+
+  ParticipantAOSSDataAccessPolicy:
+    Type: 'AWS::OpenSearchServerless::AccessPolicy'
+    Properties:
+      Name: participant-data-access-policy
+      Type: data
+      Description: 'Access for Participant'
+      Policy: 
+        !Sub >
+          [
+            {
+              "Rules": [
+                {
+                  "ResourceType": "index",
+                  "Resource": ["index/${AOSSCollectionName}/*"],
+                  "Permission": [
+                    "aoss:*"
+                  ]
+                },
+                {
+                  "ResourceType": "collection",
+                  "Resource": ["collection/${AOSSCollectionName}"],
+                  "Permission": [
+                    "aoss:*"
+                  ]
+                }
+              ],
+              "Principal": [
+                "${ParticipantRoleArn}"
+              ]
+            }
+          ]
+
+
+
+  # Lambda custom resource to create an OpenSearch index
+  IndexCreatorLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - !Sub lambda.${AWS::URLSuffix}
+          Action:
+          - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  IndexCreatorLambda:
+    Type: AWS::Lambda::Function
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W58
+            reason: Warning incorrectly reported. The role associated with the Lambda function has the AWSLambdaBasicExecutionRole managed policy attached, which includes permission to write CloudWatch Logs. See https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AWSLambdaBasicExecutionRole.html
+          - id: W89
+            reason: CloudFormation custom function does not need the scaffolding of a VPC, to do so would add unnecessary complexity
+          - id: W92
+            reason: CloudFormation custom function does not need reserved concurrent executions, to do so would add unnecessary complexity
+    Properties:
+      Description: Creates an index in OpenSearch
+      Handler: index_creator.lambda_handler
+      Runtime: python3.11
+      MemorySize: 128
+      Timeout: 120
+      Architectures:
+        - arm64
+      Role: !GetAtt IndexCreatorLambdaRole.Arn
+      Code:
+        S3Bucket: !Ref WorkshopStudioAssetsBucket
+        S3Key: !Sub "${WorkshopStudioAssetsBucketPrefix}OpenSearch-IndexCreatorLambda.zip"
+
+  IndexCreator:
+    Type: AWS::CloudFormation::CustomResource
+    DependsOn:
+      - AOSSDataPlaneAccessPolicy
+    Properties:
+      ServiceToken: !GetAtt IndexCreatorLambda.Arn
+      ServiceTimeout: 120
+      IndexName: !Ref AOSSIndexName
+      CollectionEndpoint: !GetAtt AOSSCollection.CollectionEndpoint
+      CollectionRegion: !Ref AWS::Region
+
+  KnowledgeBaseWithAoss:
+    Type: AWS::Bedrock::KnowledgeBase
+    DependsOn: 
+      - AOSSDataPlaneAccessPolicy
+      - IndexCreator
+    Properties:
+      Name: 'workshop-knowledge-base'
+      Description: 'Documents for Doctors with disease fact sheets, and for Receptionists with policies for scheduling and cancelling appointments, available medical services, and details of healthcare practitioners'
+      RoleArn: !GetAtt BedrockKnowledgeBaseRole.Arn
+      KnowledgeBaseConfiguration:
+        Type: "VECTOR"
+        VectorKnowledgeBaseConfiguration:
+          EmbeddingModelArn: !Sub "arn:${AWS::Partition}:bedrock:${AWS::Region}::foundation-model/${EmbeddingsModel}"
+      StorageConfiguration:
+        Type: "OPENSEARCH_SERVERLESS"
+        OpensearchServerlessConfiguration:
+          CollectionArn: !GetAtt AOSSCollection.Arn
+          VectorIndexName: !Ref AOSSIndexName
+          FieldMapping:
+            VectorField: !Ref AOSSVectorName
+            TextField: "text"
+            MetadataField: "metadata"
+
+  SampleDataSource:
+    Type: AWS::Bedrock::DataSource
+    Properties:
+      KnowledgeBaseId: !Ref KnowledgeBaseWithAoss
+      Name: 'workshop-data-source'
+      Description: 'Disease fact sheets and policy documents'
+      DataSourceConfiguration:
+        Type: "S3"
+        S3Configuration:
+          BucketArn: !Sub
+            - 'arn:${AWS::Partition}:s3:::${WorkshopAssetsBucket}'
+            - WorkshopAssetsBucket: !ImportValue 'WorkshopAssetsBucket'
+          InclusionPrefixes: ["knowledge_base/Med_Office/"]
+
+  BedrockAgentRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: !Sub bedrock.${AWS::URLSuffix}
+          Action: sts:AssumeRole
+          Condition:
+            StringEquals:
+              aws:SourceAccount: !Ref AWS::AccountId
+            ArnLike:
+              aws:SourceArn: !Sub arn:${AWS::Partition}:bedrock:${AWS::Region}:${AWS::AccountId}:agent/*
+      Policies:
+        - PolicyName: BedrockAgentPolicy
+          PolicyDocument:
+            Statement:
+              - Sid: InvokeFM
+                Effect: Allow
+                Action:
+                  - bedrock:InvokeModel
+                  - bedrock:InvokeModelWithResponseStream
+                  - bedrock:GetInferenceProfile
+                  - bedrock:GetFoundationModel
+                Resource:
+                  - !Sub arn:${AWS::Partition}:bedrock:*::foundation-model/${LanguageModel}
+                  - !Sub arn:${AWS::Partition}:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/us.${LanguageModel} # NOTE: this only works for Cross-Region Inference in US Regions
+              - Sid: AllowApplyGuardrail
+                Effect: Allow
+                Action:
+                  - bedrock:ApplyGuardrail
+                Resource:
+                  - !Sub arn:${AWS::Partition}:bedrock:${AWS::Region}:${AWS::AccountId}:guardrail/*
+              - Sid: AllowS3GetOpenAPI
+                Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource:
+                  - !Sub 
+                    - 'arn:${AWS::Partition}:s3:::${WorkshopAssetsBucket}/*'
+                    - WorkshopAssetsBucket: !ImportValue 'WorkshopAssetsBucket'                    
+                Condition:
+                  StringEquals:
+                    aws:ResourceAccount: !Ref AWS::AccountId
+              - Sid: InvokeKB
+                Effect: Allow
+                Action:
+                  - bedrock:Retrieve
+                  - bedrock:RetrieveAndGenerate
+                Resource:
+                  - !GetAtt KnowledgeBaseWithAoss.KnowledgeBaseArn
+              - Sid: AllowKMSActions
+                Effect: Allow
+                Action:
+                  - kms:DescribeKey
+                  - kms:Encrypt
+                  - kms:Decrypt
+                  - kms:ReEncrypt*
+                  - kms:GenerateDataKey
+                  - kms:GenerateDataKeyWithoutPlaintext                
+                Resource:
+                  - !GetAtt CustomerManagedKey.Arn
+
+  BedrockAgent:
+    Type: AWS::Bedrock::Agent
+    Properties:
+      AgentName: "HealthcareAgent"
+      AgentResourceRoleArn: !GetAtt BedrockAgentRole.Arn
+      AutoPrepare: true
+      FoundationModel: !Sub arn:${AWS::Partition}:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/us.${LanguageModel} # NOTE: this only works for Cross-Region Inference in US Regions
+      Instruction: |
+        You are an interactive healthcare agent who gets the patients data based on the patient's name in the <question>. 
+        The patient's data contains contact details like patient name, age, address, and date of birth and medical details like blood group, blood pressure, HDL, LDL, and Triglycerides. 
+        Only doctors are allowed to access a patient's medical details whereas receptionists are allowed to access only the patient's contact details. 
+        If you dont have enough information to respond to an utterance, you can prompt additional information from the user like what is the patient's name, enter the patient's name. Sample questions are:
+        1. Get data of the patient <patient name>
+        2. Get medical data of <patient name>
+        3. What is the address of the patient <patient name>
+        4. What is the blood pressure of <patient name>
+        5. What is the HDL of the patient <patient name>
+
+      Description: "Helpful healthcare chatbot"
+      IdleSessionTTLInSeconds: 900
+      KnowledgeBases:
+        - KnowledgeBaseId: !Ref KnowledgeBaseWithAoss
+          Description: "Documents for Doctors with disease fact sheets, and for Receptionists with policies for scheduling and cancelling appointments, available medical services, and details of healthcare practitioners"
+          KnowledgeBaseState: ENABLED
+      ActionGroups:
+        - ActionGroupExecutor: 
+            Lambda: !GetAtt HealthCareAgentLambda.Arn
+          ActionGroupName: "HealthCareAgent_ActionGroup" # NOTE: Action Groups must not use dashes ('-')
+          ActionGroupState: ENABLED
+          ApiSchema:
+            S3:
+              S3BucketName: !ImportValue 'WorkshopAssetsBucket'
+              S3ObjectKey: "HealthCareAgentAPISchema.json"
+          Description: "API that provides contact and medical information for patients."
+    
+  BedrockAgentAlias:
+    Type: AWS::Bedrock::AgentAlias
+    Properties:
+      AgentAliasName: "InitialVersion"
+      AgentId: !GetAtt BedrockAgent.AgentId
+      Description: "Initial version of the agent"
+
+
+########### office users table ###########
+  UserTable:
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W78
+            reason: Adding backup to this table that has sample data adds unnecessary complexity
+          - id: W28
+            reason: Table has explicit name to make it easier to locate in the CloudWatch console.
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: "UserTable"
+      BillingMode: "PROVISIONED"
+      AttributeDefinitions:
+        - AttributeName: "name"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "name"
+          KeyType: "HASH"
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      SSESpecification:
+        KMSMasterKeyId: !Ref CustomerManagedKey
+        SSEEnabled: true
+        SSEType: KMS
+
+
+  ########### CloudWatch Resources ###########
+  WorkshopLogGroup:
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W84
+            reason: Adding encryption at rest will add unnecessary complexity to this log group that has Application Logs.
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: "Delete"
+    Properties:
+      LogGroupClass: "STANDARD"
+      LogGroupName: workshop-log-group
+      RetentionInDays: 14
+
+
+
+
+
+  # Metric Filter for prompt attack
+  MetricFilterPrompt:
+    Type: AWS::Logs::MetricFilter
+    Properties:
+      LogGroupName: !Ref WorkshopLogGroup
+      FilterPattern: '{$.user=* && $.*=%"type":"PROMPT_ATTACK"%}'
+      MetricTransformations:
+        - MetricName: prompt-attack
+          MetricNamespace: workshopDemoApp/userQuery
+          MetricValue: "1"
+          Dimensions:
+            - Key: username
+              Value: $.user
+          Unit: Count
+
+  # Metric Filter for harmful content
+  MetricFilterMisconduct:
+    Type: AWS::Logs::MetricFilter
+    Properties:
+      LogGroupName: !Ref WorkshopLogGroup
+      FilterPattern: '{$.user=* && $.*=%"type":"MISCONDUCT"%}'
+      MetricTransformations:
+        - MetricName: misconduct
+          MetricNamespace: workshopDemoApp/userQuery
+          MetricValue: "1"
+          Dimensions:
+            - Key: username
+              Value: $.user
+          Unit: Count
+                    
+  UpdateUserStatusRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: LambdaDynamoDBAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:UpdateItem
+                Resource: !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${UserTable}
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: arn:aws:logs:*:*:*
+              - Sid: AllowKMSActions
+                Effect: Allow
+                Action:
+                  - kms:DescribeKey
+                  - kms:Encrypt
+                  - kms:Decrypt
+                  - kms:ReEncrypt*
+                  - kms:GenerateDataKey
+                  - kms:GenerateDataKeyWithoutPlaintext                
+                Resource:
+                  - !GetAtt CustomerManagedKey.Arn
+
+
+  # CloudWatch Alarm for prompt attacks
+  AlarmChristinePrompt:
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W28
+            reason: Alarm has explicit name to make it easier to locate in the CloudWatch console.
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: "ChristinePromptAlarm"
+      Namespace: workshopDemoApp/userQuery
+      MetricName: prompt-attack
+      Dimensions:
+        - Name: username
+          Value: "Christine"
+      Statistic: Sum
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 4
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !GetAtt UserManagementLambda.Arn
+      OKActions: 
+        - !GetAtt UserManagementLambda.Arn
+        
+  AlarmAlicePrompt:
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W28
+            reason: Alarm has explicit name to make it easier to locate in the CloudWatch console.
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: "AlicePromptAlarm"
+      Namespace: workshopDemoApp/userQuery
+      MetricName: prompt-attack
+      Dimensions:
+        - Name: username
+          Value: "Alice"
+      Statistic: Sum
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 4
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !GetAtt UserManagementLambda.Arn
+      OKActions: 
+        - !GetAtt UserManagementLambda.Arn
+
+ # CloudWatch Alarm for harmful content
+  AlarmChristineMisconduct:
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W28
+            reason: Alarm has explicit name to make it easier to locate in the CloudWatch console.
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: "ChristineMisconductAlarm"
+      Namespace: workshopDemoApp/userQuery
+      MetricName: misconduct
+      Dimensions:
+        - Name: username
+          Value: "Christine"
+      Statistic: Sum
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 4
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !GetAtt UserManagementLambda.Arn
+      OKActions: 
+        - !GetAtt UserManagementLambda.Arn
+        
+  AlarmAliceMisconduct:
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W28
+            reason: Alarm has explicit name to make it easier to locate in the CloudWatch console.
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: "AliceMisconductAlarm"
+      Namespace: workshopDemoApp/userQuery
+      MetricName: misconduct
+      Dimensions:
+        - Name: username
+          Value: "Alice"
+      Statistic: Sum
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 4
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !GetAtt UserManagementLambda.Arn
+      OKActions: 
+        - !GetAtt UserManagementLambda.Arn
+
+  UpdateUserStatusEventPermissionChristine:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt UserManagementLambda.Arn
+      Action: lambda:InvokeFunction
+      Principal: lambda.alarms.cloudwatch.amazonaws.com
+      SourceArn: !Sub arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:*
+
+  UserManagementLambda:
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W89
+            reason: Alarm response function does not need the scaffolding of a VPC, to do so would add unnecessary complexity
+          - id: W92
+            reason: Alarm response function does not need reserved concurrent executions, to do so would add unnecessary complexity
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: Lambda function to handle CloudWatch alarms and update user status in DynamoDB
+      Handler: index.lambda_handler
+      Runtime: python3.11
+      MemorySize: 128
+      Timeout: 10
+      Role: !GetAtt UpdateUserStatusRole.Arn
+      Code:
+        ZipFile: |
+          import boto3
+          import json
+          import logging
+
+          # Initialize logger
+          logger = logging.getLogger()
+          logger.setLevel(logging.INFO)
+
+          # DynamoDB table name
+          DYNAMODB_TABLE_NAME = "UserTable"
+
+          # Initialize DynamoDB resource
+          dynamodb = boto3.resource('dynamodb', region_name='us-west-2')
+          table = dynamodb.Table(DYNAMODB_TABLE_NAME)
+
+          def update_user_status(username, status):
+              """
+              Updates the user's status in DynamoDB.
+              """
+              try:
+                  response = table.update_item(
+                      Key={'name': username},
+                      UpdateExpression="SET #status = :status",
+                      ExpressionAttributeNames={"#status": "status"},
+                      ExpressionAttributeValues={":status": status},
+                      ReturnValues="UPDATED_NEW"
+                  )
+                  logger.info(f"User {username} status updated to {status}: {response}")
+              except Exception as e:
+                  logger.error(f"Failed to update user {username} status to {status}: {e}")
+                  raise
+
+          def lambda_handler(event, context):
+              """
+              Lambda function to process CloudWatch alarm events and update user status in DynamoDB.
+              """
+              logger.info(f"Received event: {json.dumps(event)}")
+
+              try:
+                  # Extract alarm details
+                  alarm_data = event.get('alarmData', {})
+                  if not alarm_data:
+                      raise ValueError("Missing 'alarmData' in event.")
+
+                  # Extract current alarm state and previous state
+                  state = alarm_data.get('state', {}).get('value')
+                  previous_state = alarm_data.get('previousState', {}).get('value')
+
+                  if not state or not previous_state:
+                      raise ValueError("Missing 'state' or 'previousState' in alarmData.")
+
+                  # Extract metrics configuration
+                  metrics = alarm_data.get('configuration', {}).get('metrics', [])
+                  if not metrics:
+                      raise ValueError("Missing 'metrics' in alarm configuration.")
+
+                  # Find username from dimensions
+                  for metric in metrics:
+                      dimensions = metric.get('metricStat', {}).get('metric', {}).get('dimensions', {})
+                      username = dimensions.get('username')
+                      if username:
+                          logger.info(f"Processing user: {username}")
+
+                          # Handle state transitions
+                          if previous_state == "OK" and state == "ALARM":
+                              logger.info(f"Transition detected: OK -> ALARM for user {username}. Disabling user.")
+                              update_user_status(username, "disabled")
+                              return {"statusCode": 200, "body": f"User {username} disabled successfully."}
+                          elif previous_state == "ALARM" and state == "OK":
+                              logger.info(f"Transition detected: ALARM -> OK for user {username}. Re-enabling user.")
+                              update_user_status(username, "enabled")
+                              return {"statusCode": 200, "body": f"User {username} re-enabled successfully."}
+                          else:
+                              logger.info(f"No action required for transition {previous_state} -> {state}.")
+                              return {"statusCode": 200, "body": f"No action required for {username}."}
+
+                  raise ValueError("No username found in alarm dimensions.")
+
+              except Exception as e:
+                  logger.error(f"Error processing CloudWatch alarm: {e}")
+                  return {"statusCode": 500, "body": str(e)}
+
+
+  ## Enable AWS Config
+  # S3 Bucket for AWS Config
+  ConfigBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Delete
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  # S3 Bucket Policy for AWS Config
+  ConfigBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ConfigBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AWSConfigBucketPermissionsCheck
+            Effect: Allow
+            Principal:
+              Service: config.amazonaws.com
+            Action: s3:GetBucketAcl
+            Resource: !GetAtt ConfigBucket.Arn
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Sub '${AWS::AccountId}'
+          - Sid: AWSConfigBucketExistenceCheck
+            Effect: Allow
+            Principal:
+              Service: config.amazonaws.com
+            Action: s3:ListBucket
+            Resource: !GetAtt ConfigBucket.Arn
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Sub '${AWS::AccountId}'
+          - Sid: AWSConfigBucketDelivery
+            Effect: Allow
+            Principal:
+              Service: config.amazonaws.com
+            Action: s3:PutObject
+            Resource: !Sub '${ConfigBucket.Arn}/AWSLogs/${AWS::AccountId}/Config/*'
+            Condition:
+              StringEquals:
+                's3:x-amz-acl': 'bucket-owner-full-control'
+                aws:SourceAccount: !Sub '${AWS::AccountId}'
+
+  # IAM Role for Config Recorder
+  ConfigRecorderRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - config.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/service-role/AWS_ConfigRole"
+
+  # AWS Config Recorder
+  ConfigRecorder: 
+    Type: AWS::Config::ConfigurationRecorder
+    Properties: 
+      RoleARN: !GetAtt ConfigRecorderRole.Arn
+
+  # AWS Config Delivery Channel
+  ConfigDeliveryChannel:
+    Type: AWS::Config::DeliveryChannel
+    Properties:
+      Name: config-delivery-channel
+      S3BucketName: !Ref ConfigBucket
+      ConfigSnapshotDeliveryProperties:
+        DeliveryFrequency: TwentyFour_Hours
+
+  # IAM Role for Lambda Function
+  BedrockAgentConfigRuleLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AmazonBedrockReadOnly
+      Policies:
+        - PolicyName: ConfigPutEvaluations
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - config:PutEvaluations
+                  - config:GetComplianceDetailsByConfigRule
+                Resource: '*'
+
+  ## Custom Rule resources
+  # Lambda Function
+  BedrockAgentConfigRuleLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: bedrockAgentGuardrailPromptAttack.lambda_handler
+      Role: !GetAtt BedrockAgentConfigRuleLambdaExecutionRole.Arn
+      Code:
+        S3Bucket: !Ref WorkshopStudioAssetsBucket
+        S3Key: !Sub "${WorkshopStudioAssetsBucketPrefix}BedrockAgentGuardrailPromptAttack-ConfigRule.zip"
+      Runtime: python3.12
+      Timeout: 300
+      MemorySize: 128
+      Layers:
+      - !Sub arn:${AWS::Partition}:lambda:${AWS::Region}:711761543063:layer:rdklib-layer:33
+
+  # Lambda Permission for Config
+  BedrockAgentConfigRuleLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt BedrockAgentConfigRuleLambdaFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: config.amazonaws.com
+
+  # Custom Config Rule
+  BedrockAgentConfigRule:
+    Type: AWS::Config::ConfigRule
+    DependsOn: BedrockAgentConfigRuleLambdaPermission
+    Properties:
+      ConfigRuleName: bedrock-agent-guardrail-prompt-attack
+      Description: 'Checks whether Bedrock Agents are configured with a Guardrail and the Guardrail has the Prompt Attack content filter.'
+      Source:
+        Owner: CUSTOM_LAMBDA
+        SourceIdentifier: !GetAtt BedrockAgentConfigRuleLambdaFunction.Arn
+        SourceDetails:
+          - EventSource: aws.config
+            MessageType: ScheduledNotification
+            MaximumExecutionFrequency: One_Hour
+      InputParameters: 
+        AssumeRoleMode: "False"
+
+
+
+
+
+
+
+
+
+
+
+
+Outputs:
+  AgentId:
+    Description: Bedrock Agent Id
+    Value: !GetAtt BedrockAgent.AgentId
+  AgentAliasId:
+    Description: Bedrock Agent Alias Id
+    Value: !GetAtt BedrockAgentAlias.AgentAliasId
+  KnowledgeBaseId:
+    Description: Bedrock Knowledge Base Id
+    Value: !GetAtt KnowledgeBaseWithAoss.KnowledgeBaseId
+  LogGroupName:
+    Description: The name of the CloudWatch Log Group
+    Value: !Ref WorkshopLogGroup
+  UserTableName:
+    Description: "The name of the DynamoDB table for application user information."
+    Value: !Ref UserTable
+    Export:
+      Name: "UserTableName" 
+  LambdaFunction:
+    Description: Lambda Function Name
+    Value: !Ref UserManagementLambda

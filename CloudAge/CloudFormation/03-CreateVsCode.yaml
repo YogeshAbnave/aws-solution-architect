@@ -1,0 +1,888 @@
+Description: Create a VSCode code-server instance with an Amazon CloudFront distribution for use in Workshop Studio
+
+Parameters:
+  VSCodeUser:
+    Type: String
+    Description: UserName for VSCode Server
+    Default: participant
+  InstanceName:
+    Type: String
+    Description: VSCode Server EC2 instance name
+    Default: VSCodeServer
+  InstanceVolumeSize:
+    Type: Number
+    Description: VSCode Server EC2 instance volume size in GB
+    Default: 30
+  InstanceType:
+    Description: VSCode Server EC2 instance type
+    Type: String
+    Default: t4g.medium
+  InstanceAmiId:
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Description: VSCode Server EC2 AMI ID parameter path
+    Default: '/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64'
+    # aws ssm get-parameters-by-path --path "/aws/service/canonical/ubuntu/" --recursive --query "Parameters[*].Name"  > canonical-ami.txt
+    # aws ssm get-parameters-by-path --path "/aws/service/ami-amazon-linux-latest/" --recursive --query "Parameters[*].Name"  > amazon-ami.txt
+  HomeFolder:
+    Type: String
+    Description: Folder to open in VS Code server
+    Default: /home/participant/workshop
+  DevServerBasePath:
+    Type: String
+    Description: Base path for the application to be added to Nginx sites-available list
+    Default: app
+  DevServerPort:
+    Type: Number
+    Description: Port for the DevServer
+    Default: 8081
+  AssetZipS3Path:
+    Description: S3 path holding the asset zip file to be copied into the home folder. To not include any assets, leave blank
+    Type: String
+    Default: ''
+  BranchZipS3Path:
+    Description: S3 path holding the branches zip file to be checked into the git repo, with each folder being a branch. The content of each folder will added as under a branch, with the folder name being used as the branch name. To leave the empty, leave blank
+    Type: String
+    Default: ''
+  WorkshopStudioAssetsBucket:
+    Description: Assets bucket name
+    Type: String
+  WorkshopStudioAssetsBucketPrefix:
+    Description: Assets bucket prefix
+    Type: String
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Instance Configuration
+        Parameters:
+          - InstanceName
+          - InstanceVolumeSize
+          - InstanceType
+          - InstanceAmiId
+      - Label:
+          default: Code Server Configuration
+        Parameters:
+          - VSCodeUser
+          - HomeFolder
+          - AssetZipS3Path
+          - DevServerBasePath
+          - DevServerPort
+          - BranchZipS3Path
+    ParameterLabels:
+      VSCodeUser:
+        default: VSCode user name
+      InstanceName:
+        default: Instance name
+      InstanceVolumeSize:
+        default: Instance volume size
+      InstanceType:
+        default: Instance type
+      InstanceAmiId:
+        default: Instance AMI ID path
+      HomeFolder:
+        default: VSCode home folder
+      DevServerBasePath:
+        default: Application base path
+      DevServerPort:
+        default: Application port
+      AssetZipS3Path:
+        default: Asset file S3 path
+      BranchZipS3Path:
+        default: Branch file S3 path
+
+Mappings:
+  # aws ec2 describe-managed-prefix-lists  --region <REGION> | jq -r '.PrefixLists[] | select (.PrefixListName == "com.amazonaws.global.cloudfront.origin-facing") | .PrefixListId'
+  AWSRegions2PrefixListID:
+    eu-west-1:
+      PrefixList: pl-4fa04526
+    eu-west-2:
+      PrefixList: pl-93a247fa
+    eu-west-3:
+      PrefixList: pl-75b1541c
+    us-east-1:
+      PrefixList: pl-3b927c52
+    us-east-2:
+      PrefixList: pl-b6a144df
+    us-west-1:
+      PrefixList: pl-4ea04527
+    us-west-2:
+      PrefixList: pl-82a045eb
+
+Resources:
+  WorkshopAssetsBucket:
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W35
+            reason: S3 Bucket access logging will require yet another S3 bucket to be created adding unnecessary complexity. This bucket is only used for ZIP files for the workshp, no real data.
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  WorkshopAssetsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref WorkshopAssetsBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: !Sub logging.s3.${AWS::URLSuffix}
+            Action:
+              - s3:PutObject
+              - s3:GetObject
+            Resource:
+              - !Sub ${WorkshopAssetsBucket.Arn}/*
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+
+
+  SecretPlaintextLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - !Sub lambda.${AWS::URLSuffix}
+          Action:
+          - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: AwsSecretsManager
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: !Ref VSCodeSecret
+
+  SecretPlaintextLambda:
+    Type: AWS::Lambda::Function
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W58
+            reason: Warning incorrectly reported. The role associated with the Lambda function has the AWSLambdaBasicExecutionRole managed policy attached, which includes permission to write CloudWatch Logs. See https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AWSLambdaBasicExecutionRole.html
+          - id: W89
+            reason: CloudFormation custom function does not need the scaffolding of a VPC, to do so would add unnecessary complexity
+          - id: W92
+            reason: CloudFormation custom function does not need reserved concurrent executions, to do so would add unnecessary complexity
+    Properties:
+      Description: Return the value of the secret
+      Handler: index.lambda_handler
+      Runtime: python3.11
+      MemorySize: 128
+      Timeout: 10
+      Architectures:
+        - arm64
+      Role: !GetAtt SecretPlaintextLambdaRole.Arn
+      Code:
+        ZipFile: |
+          import boto3
+          import json
+          import cfnresponse
+          import logging
+
+          logger = logging.getLogger()
+          logger.setLevel(logging.INFO)
+
+          def is_valid_json(json_string):
+            logger.debug('Calling is_valid_jason: %s', json_string)
+            try:
+              json.loads(json_string)
+              logger.info('Secret is in json format')
+              return True
+            except json.JSONDecodeError:
+              logger.info('Secret is in string format')
+              return False
+          def lambda_handler(event, context):
+            try:
+              if event['RequestType'] == 'Delete':
+                cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData={}, reason='No action to take')
+              else:
+                secret_name = (event['ResourceProperties']['SecretArn'])
+                secrets_mgr = boto3.client('secretsmanager')
+                secret = secrets_mgr.get_secret_value(SecretId = secret_name)
+                logger.info('Getting secret from %s', secret_name)
+                secret_value = secret['SecretString']
+                logger.debug('secret_value: %s', secret_value)
+                responseData = {}
+                if is_valid_json(secret_value):
+                  responseData = secret_value
+                else:
+                  responseData = {'secret': secret_value}
+                logger.debug('responseData: %s', responseData)
+                logger.debug('type(responseData): %s', type(responseData))
+                cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData=json.loads(responseData), reason='OK', noEcho=True)
+            except Exception as e:
+              cfnresponse.send(event, context, cfnresponse.FAILED, responseData={}, reason=str(e))
+
+  ########### SSM Resources ###########
+  RunSSMDocCustom:
+    Type: Custom::RunSSMDocLambda
+    Properties:
+      ServiceToken: !GetAtt RunSSMDocLambda.Arn
+      ServiceTimeout: 250
+      InstanceId: !Ref VSCodeInstance
+      DocumentName: !Ref VSCodeSSMDoc
+      CloudWatchLogGroupName: !Ref VSCodeSSMDocLogGroup
+      password: !GetAtt SecretPlaintext.password
+      ImageId: !Ref InstanceAmiId
+
+  RunSSMDocLambdaRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: The Amazon EC2 ec2:Describe* API actions do not support resource-level permissions, so you cannot control which individual resources users can view in the console. Therefore, the * wildcard is necessary in the Resource element. See https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-policies-ec2-console.html
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: !Sub lambda.${AWS::URLSuffix}
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: RunSSMDocOnEC2
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:SendCommand
+                Resource:
+                  - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:document/${VSCodeSSMDoc}
+                  - !Sub arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:instance/${VSCodeInstance}
+              - Effect: Allow
+                Action:
+                  - ec2:DescribeImages
+                Resource: '*'
+
+  RunSSMDocLambda:
+    Type: AWS::Lambda::Function
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W58
+            reason: Warning incorrectly reported. The role associated with the Lambda function has the AWSLambdaBasicExecutionRole managed policy attached, which includes permission to write CloudWatch Logs. See https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AWSLambdaBasicExecutionRole.html
+          - id: W89
+            reason: CloudFormation custom function does not need the scaffolding of a VPC, to do so would add unnecessary complexity
+          - id: W92
+            reason: CloudFormation custom function does not need reserved concurrent executions, to do so would add unnecessary complexity
+    Properties:
+      Description: Run SSM document on EC2 instance
+      Handler: index.lambda_handler
+      Runtime: python3.11
+      MemorySize: 128
+      Timeout: 200
+      Architectures:
+        - arm64
+      Role: !GetAtt RunSSMDocLambdaRole.Arn
+      Code:
+        ZipFile: |
+          import boto3
+          import cfnresponse
+          import logging
+          import time
+
+          logger = logging.getLogger()
+          logger.setLevel(logging.INFO)
+          ssm = boto3.client('ssm')
+          ec2 = boto3.client('ec2')
+
+          WAIT_BEFORE_RUN=120 # 120 seconds = 2 minutes
+
+          def lambda_handler(event, context):
+            logger.debug('event: %s', event)
+            try:
+              if event['RequestType'] != 'Create':
+                cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData={}, reason='No action to take')
+              else:
+                resource_properties = (event['ResourceProperties'])
+                logger.debug('resource_properties: %s', resource_properties)
+
+                instance_id = (event['ResourceProperties']['InstanceId'])
+                document_name = (event['ResourceProperties']['DocumentName'])
+                cloudwatch_log_group_name = (event['ResourceProperties']['CloudWatchLogGroupName'])
+                image_id = (event['ResourceProperties']['ImageId'])
+
+                del resource_properties['ServiceToken']
+                del resource_properties['ServiceTimeout']
+                del resource_properties['InstanceId']
+                del resource_properties['DocumentName']
+                del resource_properties['CloudWatchLogGroupName']
+                del resource_properties['ImageId']
+
+                parameters = {}
+                for key, value in resource_properties.items():
+                  parameters[key] = [value]
+
+                # Get the Linux Flavour from the image name
+                response = ec2.describe_images(ImageIds=[image_id])
+                parameters['linuxflavour'] = ['ubuntu'] if 'ubuntu' in response['Images'][0]['Name'].lower() else ['al2023']
+
+                logger.info('Waiting %d seconds before running command', WAIT_BEFORE_RUN)
+                time.sleep(WAIT_BEFORE_RUN)
+
+                logger.info('Running SSM Document %s on EC2 Instance %s. Logging to %s', document_name, instance_id, cloudwatch_log_group_name)
+                logger.debug('Parameters: %s', parameters)
+
+                response = ssm.send_command(
+                  InstanceIds = [instance_id],
+                  DocumentName = document_name,
+                  CloudWatchOutputConfig = {'CloudWatchLogGroupName': cloudwatch_log_group_name, 'CloudWatchOutputEnabled': True},
+                  Parameters = parameters
+                )
+                command_id = response['Command']['CommandId']
+                responseData = {'CommandId': command_id}
+                cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData, reason='OK')
+            except Exception as e:
+              cfnresponse.send(event, context, cfnresponse.FAILED, responseData={}, reason=str(e))
+
+  VSCodeSecret:
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W77
+            reason: The default KMS Key used by Secrets manager is appropriate for this password which will be used to log into VSCodeServer, which has very limited permissions. In addition this secret will not be required to be shared across accounts
+    Type: AWS::SecretsManager::Secret
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      Name: !Ref InstanceName
+      Description: VSCode user details
+      GenerateSecretString:
+        PasswordLength: 16
+        SecretStringTemplate: !Sub '{"username":"${VSCodeUser}"}'
+        GenerateStringKey: 'password'
+        ExcludePunctuation: true
+
+  SecretPlaintext:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !GetAtt SecretPlaintextLambda.Arn
+      ServiceTimeout: 20
+      SecretArn: !Ref VSCodeSecret
+
+  VSCodeSSMDoc:
+    Type: AWS::SSM::Document
+    Properties:
+      DocumentType: Command
+      Content:
+        schemaVersion: '2.2'
+        description: Bootstrap VSCode code-server instance
+        parameters:
+          linuxflavour:
+            type: String
+            default: 'al2023'
+          password:
+            type: String
+            default: !Ref AWS::StackId
+          nodeVersion:
+            type: String
+            default: '20'
+            allowedValues:
+              - '22'
+              - '20'
+              - '18'
+          dotNetVersion:
+            type: String
+            default: '8.0'
+            allowedValues:
+              - '8.0'
+              - '7.0'
+        # all mainSteps scripts are in in /var/lib/amazon/ssm/<instanceid>/document/orchestration/<uuid>/<StepName>/_script.sh
+        mainSteps:
+          - action: aws:runShellScript
+            name: InstallBasePackagesYum
+            precondition:
+              StringEquals:
+                - '{{ linuxflavour }}'
+                - al2023
+            inputs:
+              runCommand:
+                - '#!/bin/bash'
+                - yum install -y --allowerasing argon2 unzip nginx curl gnupg whois openssl yum-utils
+          - action: aws:runShellScript
+            name: AddUserYum
+            precondition:
+              StringEquals:
+                - '{{ linuxflavour }}'
+                - al2023
+            inputs:
+              runCommand:
+                - '#!/bin/bash'
+                - !Sub |
+                  echo 'Adding user: ${VSCodeUser}'
+                  adduser -c '' ${VSCodeUser}
+                  passwd -l ${VSCodeUser}
+                  echo "${VSCodeUser}:{{ password }}" | chpasswd
+                  usermod -aG wheel ${VSCodeUser}
+                - echo "User Added. Checking configuration"
+                - !Sub getent passwd ${VSCodeUser}
+          - action: aws:runShellScript
+            name: InstallNodeYum
+            precondition:
+              StringEquals:
+                - '{{ linuxflavour }}'
+                - al2023
+            inputs:
+              runCommand:
+                - '#!/bin/bash'
+                - curl -fsSL https://rpm.nodesource.com/setup_{{ nodeVersion }}.x | bash -s -- 2>&1
+                - yum install -y nodejs
+                - npm install -g npm@latest
+                - echo "Node and npm installed. Checking configuration"
+                - node -v
+                - npm -v
+          - action: aws:runShellScript
+            name: ConfigureCodeServer
+            inputs:
+              runCommand:
+                - '#!/bin/bash'
+                - !Sub export HOME=/home/${VSCodeUser}
+                - curl -fsSL https://code-server.dev/install.sh | bash -s -- 2>&1
+                - !Sub systemctl enable --now code-server@${VSCodeUser} 2>&1
+                - !Sub |
+                  tee /etc/nginx/conf.d/code-server.conf <<EOF
+                  server {
+                      listen 80;
+                      listen [::]:80;
+                      # server_name \$\{CloudFrontDistribution.DomainName\};
+                      server_name *.cloudfront.net;
+                      location / {
+                        proxy_pass http://localhost:8080/;
+                        proxy_set_header Host \$host;
+                        proxy_set_header Upgrade \$http_upgrade;
+                        proxy_set_header Connection upgrade;
+                        proxy_set_header Accept-Encoding gzip;
+                      }
+                      location /${DevServerBasePath} {
+                        proxy_pass http://localhost:${DevServerPort}/${DevServerBasePath};
+                        proxy_set_header Host \$host;
+                        proxy_set_header Upgrade \$http_upgrade;
+                        proxy_set_header Connection upgrade;
+                        proxy_set_header Accept-Encoding gzip;
+                      }
+                  }
+                  EOF
+                - !Sub mkdir -p /home/${VSCodeUser}/.config/code-server
+                - !Sub |
+                  tee /home/${VSCodeUser}/.config/code-server/config.yaml <<EOF
+                  cert: false
+                  auth: password
+                  hashed-password: "$(echo -n {{ password }} | argon2 $(openssl rand -base64 12) -e)"
+                  EOF
+                - !Sub mkdir -p /home/${VSCodeUser}/.local/share/code-server/User/
+                - !Sub touch /home/${VSCodeUser}/.hushlogin
+                - !Sub mkdir -p ${HomeFolder} && chown -R ${VSCodeUser}:${VSCodeUser} ${HomeFolder}
+                - !Sub |
+                  tee /home/${VSCodeUser}/.local/share/code-server/User/settings.json <<EOF
+                  {
+                    "extensions.autoUpdate": false,
+                    "extensions.autoCheckUpdates": false,
+                    "terminal.integrated.cwd": "${HomeFolder}",
+                    "telemetry.telemetryLevel": "off",
+                    "security.workspace.trust.startupPrompt": "never",
+                    "security.workspace.trust.enabled": false,
+                    "security.workspace.trust.banner": "never",
+                    "security.workspace.trust.emptyWindow": false,
+                    "editor.indentSize": "tabSize",
+                    "editor.tabSize": 2,
+                    "python.testing.pytestEnabled": true,
+                    "auto-run-command.rules": [
+                      {
+                        "command": "workbench.action.terminal.new"
+                      }
+                    ]
+                  }
+                  EOF
+                - !Sub chown -R ${VSCodeUser}:${VSCodeUser} /home/${VSCodeUser}
+                - !Sub systemctl restart code-server@${VSCodeUser}
+                - systemctl restart nginx
+                # - !Sub sudo -u ${VSCodeUser} --login code-server --install-extension AmazonWebServices.aws-toolkit-vscode --force
+                - !Sub sudo -u ${VSCodeUser} --login code-server --install-extension AmazonWebServices.amazon-q-vscode --force
+                - !Sub sudo -u ${VSCodeUser} --login code-server --install-extension synedra.auto-run-command --force
+                - !Sub sudo -u ${VSCodeUser} --login code-server --install-extension vscjava.vscode-java-pack --force
+                - !Sub sudo -u ${VSCodeUser} --login code-server --install-extension ms-vscode.live-server --force
+                - !Sub chown -R ${VSCodeUser}:${VSCodeUser} /home/${VSCodeUser}
+                - echo "Nginx installed. Checking configuration"
+                - nginx -t 2>&1
+                - systemctl enable nginx
+                - systemctl status nginx
+                - echo "CodeServer installed. Checking configuration"
+                - code-server -v
+                - !Sub systemctl status code-server@${VSCodeUser}
+          - action: aws:runShellScript
+            name: UpdateProfile
+            inputs:
+              runCommand:
+                - '#!/bin/bash'
+                - echo LANG=en_US.utf-8 >> /etc/environment
+                - echo LC_ALL=en_US.UTF-8 >> /etc/environment
+                - !Sub echo 'PATH=$PATH:/home/${VSCodeUser}/.local/bin' >> /home/${VSCodeUser}/.bashrc
+                - !Sub echo 'export PATH' >> /home/${VSCodeUser}/.bashrc
+                - !Sub echo 'export AWS_REGION=${AWS::Region}' >> /home/${VSCodeUser}/.bashrc
+                - !Sub echo 'export AWS_ACCOUNTID=${AWS::AccountId}' >> /home/${VSCodeUser}/.bashrc
+                - !Sub echo 'export NEXT_TELEMETRY_DISABLED=1' >> /home/${VSCodeUser}/.bashrc
+                - !Sub chown -R ${VSCodeUser}:${VSCodeUser} /home/${VSCodeUser}
+          - action: aws:runShellScript
+            name: InstallAWSCLI
+            inputs:
+              runCommand:
+                - '#!/bin/bash'
+                - curl -fsSL https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m).zip -o /tmp/aws-cli.zip
+                - unzip -q -d /tmp /tmp/aws-cli.zip
+                - sudo /tmp/aws/install
+                - rm -rf /tmp/aws
+                - echo "AWS CLI installed. Checking configuration"
+                - aws --version
+          - action: aws:runShellScript
+            name: InstallPythonYum
+            precondition:
+              StringEquals:
+                - '{{ linuxflavour }}'
+                - al2023
+            inputs:
+              runCommand:
+                - '#!/bin/bash'
+                - yum install -y python3.11 python3.11-pip python3-virtualenv python3-pytest
+                - python3.11 -m pip install boto3 2>&1
+                - !Sub echo 'alias pytest=pytest-3' >> /home/${VSCodeUser}/.bashrc
+                - !Sub echo 'alias python3=python3.11' >> /home/${VSCodeUser}/.bashrc
+                - !Sub echo 'alias python=python3.11' >> /home/${VSCodeUser}/.bashrc
+                - !Sub echo 'alias pip3=pip3.11' >> /home/${VSCodeUser}/.bashrc
+                - !Sub echo 'alias pip=pip3.11' >> /home/${VSCodeUser}/.bashrc
+                - !Sub echo 'export PROMPTFOO_PYTHON=python3.11' >> /home/${VSCodeUser}/.bashrc
+                - echo "Python and Pip installed. Checking configuration"
+                - python3.11 --version
+                - pip3.11 --version
+          - action: aws:runShellScript
+            name: HandleWorkshopAssets
+            inputs:
+              runCommand:
+                - '#!/bin/bash'
+                - !Sub |
+                  # Application
+                  echo "Downloading Application ZIP file"
+                  cd /home/${VSCodeUser}/workshop
+                  aws s3 cp s3://${WorkshopStudioAssetsBucket}/${WorkshopStudioAssetsBucketPrefix}HealthCare-App.zip .
+                  unzip HealthCare-App.zip
+                  cd /home/${VSCodeUser}/workshop/app
+                  pip3.11 install -r requirements.txt
+                  cd ..
+
+                  # Knowledge Base
+                  echo "Downloading Knowledge Base ZIP file"
+                  mkdir -p assets/knowledge_base
+                  cd assets/knowledge_base
+                  aws s3 cp s3://${WorkshopStudioAssetsBucket}/${WorkshopStudioAssetsBucketPrefix}HealthCare-KnowledgeBase.zip .
+                  unzip HealthCare-KnowledgeBase.zip
+                  rm HealthCare-KnowledgeBase.zip
+                  cd ..
+
+                  # OpenAPI schema
+                  echo "Downloading OpenAPI schema file"
+                  aws s3 cp s3://${WorkshopStudioAssetsBucket}/${WorkshopStudioAssetsBucketPrefix}HealthCareAgentAPISchema.json .
+                  # upload everything in assets/ to s3
+                  aws s3 cp --recursive . s3://${WorkshopAssetsBucket}/
+                  cd ..
+
+                  # Change ownership of entire folder to ${VSCodeUser}
+                  chown -R ${VSCodeUser}:${VSCodeUser} .
+
+                  # Install promptfoo
+                  npm install -g promptfoo
+
+          - action: aws:runShellScript
+            name: InstallPythonRequirements
+            inputs:
+              runCommand:
+                - '#!/bin/bash'
+                - !Sub mkdir -p ${HomeFolder} && chown -R ${VSCodeUser}:${VSCodeUser} ${HomeFolder} # should already exist!
+                - !Sub cd ${HomeFolder}
+                - !Sub |
+                  if [[ -f "requirements.txt" ]]
+                  then
+                    echo "Setting up virtual environment and installing requirements.txt"
+                    python3 -m venv .venv # create a virtual environment
+                    source .venv/bin/activate
+                    pip3 install -r requirements.txt
+                    deactivate
+                    chown -R ${VSCodeUser}:${VSCodeUser} .venv
+                  else
+                    echo "No requirement.txt"
+                  fi
+
+  VSCodeSSMDocLogGroup:
+    Type: AWS::Logs::LogGroup
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W84
+            reason: The logs from running the SSM document on the EC2 instance is purely bash output to stdout and stderr, and has no confidential data. Encryption would require provisioning of a KMS key, and would add unnecessary complexity
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      LogGroupName: !Sub /aws/ssm/${VSCodeSSMDoc}
+      RetentionInDays: 7
+
+  ########### EC2 Resources ###########
+  VSCodeInstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - !Sub ec2.${AWS::URLSuffix}
+                - !Sub ssm.${AWS::URLSuffix}
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AmazonSSMManagedInstanceCore
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AmazonS3ReadOnlyAccess
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AmazonBedrockReadOnly
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AmazonDynamoDBReadOnlyAccess
+
+      ##### Add/delete permission policies in the section above as needed for your use-case #####
+
+
+  VSCodeIAMPolicy:
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W12
+            reason: "Several actions require * resources as the resources are created by the participant and IDs are not known ahead of time"
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: VSCodeAccessPolicy
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'logs:CreateLogGroup'
+              - 'logs:CreateLogStream'
+              - 'logs:PutLogEvents'
+            Resource:
+              - '*'
+          - Effect: Allow
+            Action:
+              - 's3:List*'
+              - 's3:Get*'
+              - 's3:Put*'
+            Resource: 
+              - !Sub 'arn:${AWS::Partition}:s3:::*/*'
+              - !Sub 'arn:${AWS::Partition}:s3:::*'
+          - Effect: Allow
+            Action:
+              - 'bedrock:ListFoundationModels'
+              - 'bedrock:GetFoundationModel'
+              - 'bedrock:InvokeAgent'
+              - 'bedrock:InvokeModel'
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - 'bedrock:ListAgents'
+              - 'bedrock:GetAgent'
+              - 'bedrock:ListAgentKnowledgeBases'
+              - 'bedrock:ListAgentVersions'
+              - 'bedrock:ListAgentAliases'
+            Resource:
+              - '*'
+            ##### arthumne@: adding a policy section for application configuration reader, opening it to all resources, deduplicated, #####
+          - Effect: Allow
+            Action:
+              - 'logs:CreateLogGroup'
+              - 'logs:CreateLogStream'
+              - 'logs:PutLogEvents'
+              - 'cloudwatch:SetAlarmState'
+            Resource:
+              - '*'
+            ##### arthumne@: adding CW logs permissions (reduce the resource scope if needed) #####
+          - Sid: AllowKMSActions
+            Effect: Allow
+            Action:
+              - kms:DescribeKey
+              - kms:Encrypt
+              - kms:Decrypt
+              - kms:ReEncrypt*
+              - kms:GenerateDataKey
+              - kms:GenerateDataKeyWithoutPlaintext
+            Resource:
+              - !Sub arn:${AWS::Partition}:kms:${AWS::Region}:${AWS::AccountId}:key/*
+      Roles:
+        - !Ref VSCodeInstanceRole
+
+  VSCodeInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref VSCodeInstanceRole
+  VSCodeInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      BlockDeviceMappings:
+        - Ebs:
+            VolumeSize: !Ref InstanceVolumeSize
+            VolumeType: gp3
+            DeleteOnTermination: true
+            Encrypted: true
+          DeviceName: /dev/xvda
+      Monitoring: true
+      ImageId: !Ref InstanceAmiId
+      InstanceType: !Ref InstanceType
+      SecurityGroupIds:
+        - !Ref SecurityGroup
+      IamInstanceProfile: !Ref VSCodeInstanceProfile
+      UserData:
+        Fn::Base64: !Sub |
+          #cloud-config
+          hostname: ${InstanceName}
+          runcmd:
+            - !Sub mkdir -p ${HomeFolder} && chown ${VSCodeUser}:${VSCodeUser} ${HomeFolder}
+      Tags:
+      - Key: Name
+        Value: !Ref InstanceName
+
+
+
+  ########### CloudFront Resources ###########
+  VSCodeInstanceCachePolicy:
+    Type: AWS::CloudFront::CachePolicy
+    Properties:
+      CachePolicyConfig:
+        DefaultTTL: 86400
+        MaxTTL: 31536000
+        MinTTL: 1
+        Name: VSCodeServer-Cache-Policy
+        ParametersInCacheKeyAndForwardedToOrigin:
+          CookiesConfig:
+            CookieBehavior: all
+          EnableAcceptEncodingGzip: False
+          HeadersConfig:
+            HeaderBehavior: whitelist
+            Headers:
+              - Accept-Charset
+              - Authorization
+              - Origin
+              - Accept
+              - Referer
+              - Host
+              - Accept-Language
+              - Accept-Encoding
+              - Accept-Datetime
+          QueryStringsConfig:
+            QueryStringBehavior: all
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W10
+            reason: CloudFront Distribution access logging would require setup of an S3 bucket and changes in IAM, which add unnecessary complexity to the template
+          - id: W70
+            reason: Workshop Studio does not include a domain that can be used to provision a certificate, so it is not possible to setup TLS. See PFR https://issues.amazon.com/issues/EE-6016
+    DependsOn:
+     - RunSSMDocCustom
+    Properties:
+      DistributionConfig:
+        Enabled: True
+        PriceClass: PriceClass_100
+        HttpVersion: http2and3
+        CacheBehaviors:
+          - AllowedMethods:
+              - GET
+              - HEAD
+              - OPTIONS
+              - PUT
+              - PATCH
+              - POST
+              - DELETE
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad # see https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-managed-cache-policies.html#managed-cache-policy-caching-disabled
+            Compress: False
+            OriginRequestPolicyId: 216adef6-5c7f-47e4-b989-5492eafa07d3 # Managed-AllViewer - see https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-managed-origin-request-policies.html#:~:text=When%20using%20AWS,47e4%2Db989%2D5492eafa07d3
+            TargetOriginId: !Sub CloudFront-${AWS::StackName}
+            ViewerProtocolPolicy: allow-all
+            PathPattern: '/proxy/*'
+        DefaultCacheBehavior:
+          AllowedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+            - PUT
+            - PATCH
+            - POST
+            - DELETE
+          CachePolicyId: !Ref VSCodeInstanceCachePolicy
+          OriginRequestPolicyId: 216adef6-5c7f-47e4-b989-5492eafa07d3 # Managed-AllViewer - see https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-managed-origin-request-policies.html#:~:text=When%20using%20AWS,47e4%2Db989%2D5492eafa07d3
+          TargetOriginId: !Sub CloudFront-${AWS::StackName}
+          ViewerProtocolPolicy: allow-all
+        Origins:
+          - DomainName: !GetAtt VSCodeInstance.PublicDnsName
+            Id: !Sub CloudFront-${AWS::StackName}
+            CustomOriginConfig:
+              OriginProtocolPolicy: http-only
+
+  ########### SecurityGroup Resources ###########
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: F1000
+            reason: It is confirmed that all traffic should be allowed outbound form this instance. The EC2 instance is provisioned in the default VPC, which already has this egress rule, and it is not possible to duplicate this egress rule in the default VPC
+    Properties:
+      GroupDescription: SG for VSCodeServer - only allow CloudFront ingress
+      SecurityGroupIngress:
+        - Description: Allow HTTP from com.amazonaws.global.cloudfront.origin-facing
+          IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          SourcePrefixListId: !FindInMap [AWSRegions2PrefixListID, !Ref 'AWS::Region', PrefixList]
+
+  
+
+Outputs:
+  URL:
+    Description: VSCode-Server URL
+    Value: !Sub https://${CloudFrontDistribution.DomainName}/?folder=${HomeFolder}
+  Password:
+    Description: VSCode-Server Password
+    Value: !GetAtt SecretPlaintext.password
+
+  WorkshopAssetsBucket:
+    Description: The name of the S3 bucket containing the workshop assets
+    Value: !Ref WorkshopAssetsBucket
+    Export:
+      Name: WorkshopAssetsBucket
+
+  HealthAppLocation:
+    Description: The location of the health app in the S3 bucket
+    Value: !Sub  s3://${WorkshopStudioAssetsBucket}/${WorkshopStudioAssetsBucketPrefix}HealthCare-App.zip
+    Export:
+      Name: HealthAppLocation
