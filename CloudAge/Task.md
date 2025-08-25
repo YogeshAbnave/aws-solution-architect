@@ -3,8 +3,8 @@
 | Date       | Topic                                   | Video | Practice | Revision |
 |------------|-----------------------------------------|:-----:|:--------:|:--------:|
 | Aug 25     | Enterprise Networking                   | ✅    | ✅       | ⬜       |
-| Aug 25     | VPC                                     | ✅    | ⬜       | ⬜       |
-| Aug 26-27  | Kernel Tuning                           | ⬜    | ⬜       | ⬜       |
+| Aug 25     | VPC                                     | ✅    | ⬜       | ⬜ 1      |
+| Aug 26-27  | Kernel Tuning                           | ⬜    | ⬜       | ⬜ 1      |
 | Aug 26-27  | Enterprise Storage Management           | ⬜    | ⬜       | ⬜       |
 | Aug 27-28  | Production Enterprise Cluster Security  | ⬜    | ⬜       | ⬜       |
 | Aug 28-29  | Data Processing                         | ⬜    | ⬜       | ⬜       |
@@ -35,7 +35,6 @@
 | Update Resume + Portfolio               | ⬜      | Done  | review remaing and portfolio remain
 | Make Domain & Email for Resume          | ⬜      | done      |
 | CloudFormation                          | ⬜      |       |
-| Terraform                               | ⬜      |       |
 | AgentCore                               | ⬜      |       |
 | Python Problem Solving                  | ⬜      | Daily 1h |
 | MCP (Multi-Cloud/Platform Study)        | ⬜      |       |
@@ -46,3 +45,17 @@
 
 
 
+and managed ML services, 
+Bedrock
+FastAPI
+ low-latency - remove
+ ECR 
+ ECS- cloud
+ Polly
+
+ resume language 
+
+ capital font
+ font 12
+
+ title - 13
