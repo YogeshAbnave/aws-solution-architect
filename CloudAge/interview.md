@@ -850,3 +850,34 @@ AWS Environment
 If you want, I can also **create a fully detailed project document with Terraform sample scripts, migration commands, and a ready-to-use AWS → OCI migration checklist**, which will make this project **interview-ready**.
 
 Do you want me to do that next?
+
+
+
+
+Senior Generative AI Engineer with 7+ years’ experience architecting scalable AI and cloud solutions. Specialize in AWS, serverless data pipelines, and deploying large-scale LLMs/ML models (BioBERT, ResNet, GNNs). Proven track record improving deployment speed and reliability via automation (CI/CD, IaC). Certified AWS Solutions Architect. Passionate about GenAI and delivering practical AI value in cross-functional teams
+
+https://www.linkedin.com/pulse/linkedins-impact-job-hunting-facts-figures-2025-sagar-hedau-okdwf/
+https://www.constructionplacements.com/linkedin-jobs-search/
+
+About Section (Profile Summary)
+
+“Senior Generative AI Engineer with 6+ years’ professional experience designing, deploying, and optimizing large-scale AI solutions on AWS Cloud. Proven track record in model training, cloud architecture, and automation using Python, PyTorch, Hugging Face, and LLM frameworks (BioBERT, ResNet, GNNs). Specialized in generative AI, RLHF, and building data pipelines with serverless technologies (Lambda, S3). Experienced in implementing secure, scalable ML systems for healthcare, fintech, and SaaS clients. AWS Certified Solutions Architect (Professional), adept in MLOps best practices, CI/CD, and remote team collaboration across multiple time zones. Passionate about leveraging GenAI for real-world impact and driving innovation in global tech environments.
+
+Job Experience Bullet (Sr. Generative AI Engineer)
+
+“Led end-to-end development and production deployment of proprietary LLMs and generative models on AWS using Python, PyTorch, and Hugging Face Transformers. Automated scalable data ingestion and event-driven ML pipelines (Lambda, S3), reducing inference latency by 40%. Integrated GenAI frameworks (LangChain, RAG, AgentCore) for enterprise solutions and enabled secure, cross-functional workflows. Mentored junior engineers and collaborated with international teams to deliver AI-driven automation for diverse industries.”
+
+
+
+
+
+---
+
+I was working in the Big Data domain, mainly focused on data warehousing and analytics. Later, our company introduced a **Machine Learning project**, which was on a completely different level. We had **data scientists, ML engineers, and several teams** working together on it.
+
+As time went on, **Python libraries** like NumPy, Pandas, LangChain, and LangGraph became popular, especially with the rise of **Large Language Models (LLMs)**.
+
+In 2023, my organization introduced **Generative AI**, and I was asked to **start the proof of concept (POC)**. That’s when I began my journey in Generative AI.
+
+I’ve been in the **AI and analytics domain for quite some time**, and it took me about **a year to deeply understand each area** before we finally began **deployment** of our AI solutions.
+
