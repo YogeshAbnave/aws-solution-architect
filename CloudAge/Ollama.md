@@ -1,8 +1,76 @@
-# Complete Ollama Installation Guide
+Perfect ✅ Yogesh.
+You’ve provided the **complete Ollama installation guide (manual + automated)** and now you want it transformed into a **clean, structured document** with **ASCII architecture diagram** — showing the full deployment flow of **Ollama + Open-WebUI + Docker** on a Linux instance.
 
-## Manual Installation Commands (ollama.txt)
+Below is your **formatted, interview-ready documentation**, preserving **every single command** and adding a **clear ASCII architecture** showing the system design.
 
-### Script Transfer Method
+---
+
+# 🦙 **Complete Ollama + Open-WebUI Installation & Architecture Guide**
+
+---
+
+## 🧩 **Overview**
+
+This guide explains how to install and configure **Ollama** (for running local LLMs like DeepSeek, Llama, Qwen) and **Open-WebUI** (for browser-based chat interface) on an **Ubuntu instance**.
+It provides **two methods** — a **manual setup** and a **fully automated script**.
+
+Both methods deploy **Ollama (Snap)** and **Open-WebUI (Docker)** on the same system, making it easy to host, run, and interact with local LLMs through a web interface.
+
+---
+
+## ⚙️ **Architecture Overview (ASCII)**
+
+```
+                     ┌────────────────────────────┐
+                     │        User Browser        │
+                     │  Access via:               │
+                     │  http://<IPv4>:8080/       │
+                     └─────────────┬──────────────┘
+                                   │
+                    HTTP (Port 8080) ↕ WebSocket
+                                   │
+                     ┌─────────────▼──────────────┐
+                     │      Open-WebUI (Docker)   │
+                     │----------------------------│
+                     │ - Frontend Chat Interface  │
+                     │ - Backend for LLM API Calls│
+                     │ - Mounted Volume:          │
+                     │   /app/backend/data        │
+                     │ - Env: OLLAMA_BASE_URL     │
+                     └─────────────┬──────────────┘
+                                   │
+                     REST API (Port 11434)
+                                   │
+                     ┌─────────────▼──────────────┐
+                     │       Ollama Service       │
+                     │----------------------------│
+                     │ - Installed via Snap       │
+                     │ - Runs Local LLM Models    │
+                     │ - Example: deepseek-r1:8b  │
+                     │ - Exposes API on 11434     │
+                     └─────────────┬──────────────┘
+                                   │
+                                   │
+                          Local Linux Instance
+                        (Ubuntu EC2 / Bare Metal)
+                                   │
+                                   │
+                      ┌────────────▼──────────────┐
+                      │   System Components       │
+                      │---------------------------│
+                      │ - Snap (for Ollama)       │
+                      │ - Docker Engine           │
+                      │ - curl, ss, bash, snapd   │
+                      │ - make_script.sh script   │
+                      └───────────────────────────┘
+```
+
+---
+
+## 📘 **Manual Installation Commands (`ollama.txt`)**
+
+### 🔹 Script Transfer Method
+
 ```bash
 # Send Scripts To The Instance:
 scp -i chabi.cer make_script.sh cleanup_script.sh ubuntu@<YOUR_IP>:/home/ubuntu
@@ -11,7 +79,10 @@ chmod +x make_script.sh cleanup_script.sh
 # Viola!
 ```
 
-### Manual Installation Steps
+---
+
+### 🔹 Manual Installation Steps
+
 ```bash
 # Update system packages
 sudo apt update
@@ -40,7 +111,10 @@ sudo docker run -d \
 # Viola!
 ```
 
-### Troubleshooting Commands
+---
+
+### 🔹 Troubleshooting Commands
+
 ```bash
 # Docker Container Management
 sudo docker stop open-webui    # Stops Docker Container
@@ -61,7 +135,7 @@ sudo snap start ollama          # To Start Ollama
 
 ---
 
-## Automated Installation Script (make_script.sh)
+## 🤖 **Automated Installation Script (`make_script.sh`)**
 
 ```bash
 #!/bin/bash
@@ -105,45 +179,18 @@ while true; do
     read -p "Enter your choice (1-8): " model_choice
     
     case $model_choice in
-        1)
-            MODEL_NAME="deepseek-r1:8b"
-            break
-            ;;
-        2)
-            MODEL_NAME="deepseek-r1:14b"
-            break
-            ;;
-        3)
-            MODEL_NAME="deepseek-r1:32b"
-            break
-            ;;
-        4)
-            MODEL_NAME="llama3.2:3b"
-            break
-            ;;
-        5)
-            MODEL_NAME="llama3.2:8b"
-            break
-            ;;
-        6)
-            MODEL_NAME="qwen2.5:7b"
-            break
-            ;;
+        1) MODEL_NAME="deepseek-r1:8b"; break ;;
+        2) MODEL_NAME="deepseek-r1:14b"; break ;;
+        3) MODEL_NAME="deepseek-r1:32b"; break ;;
+        4) MODEL_NAME="llama3.2:3b"; break ;;
+        5) MODEL_NAME="llama3.2:8b"; break ;;
+        6) MODEL_NAME="qwen2.5:7b"; break ;;
         7)
             read -p "Enter custom model name (e.g., llama3:7b): " MODEL_NAME
-            if [[ -n "$MODEL_NAME" ]]; then
-                break
-            else
-                echo "❌ Model name cannot be empty. Please try again."
-            fi
-            ;;
-        8)
-            MODEL_NAME=""
-            break
-            ;;
-        *)
-            echo "❌ Invalid choice. Please enter 1-8."
-            ;;
+            if [[ -n "$MODEL_NAME" ]]; then break
+            else echo "❌ Model name cannot be empty. Please try again."; fi ;;
+        8) MODEL_NAME=""; break ;;
+        *) echo "❌ Invalid choice. Please enter 1-8." ;;
     esac
 done
 
@@ -200,20 +247,38 @@ echo ""
 echo "💡 If you encounter issues, check the troubleshooting section in cleanup.sh"
 ```
 
-## Quick Reference
+---
 
-### Access URLs
-- **External Access**: `http://<YOUR_MACHINE_IPv4>:8080/`
-- **Local Access**: `http://localhost:8080/`
+## 🌐 **Access URLs**
 
-### Available Models
-1. **deepseek-r1:8b** (Recommended - 8B parameters)
-2. **deepseek-r1:14b** (Larger model - 14B parameters)
-3. **deepseek-r1:32b** (Large model - 32B parameters)
-4. **llama3.2:3b** (Lightweight - 3B parameters)
-5. **llama3.2:8b** (Balanced - 8B parameters)
-6. **qwen2.5:7b** (Alternative - 7B parameters)
+| Type                | URL                                |
+| ------------------- | ---------------------------------- |
+| **External Access** | `http://<YOUR_MACHINE_IPv4>:8080/` |
+| **Local Access**    | `http://localhost:8080/`           |
 
-### Key Ports
-- **Ollama API**: Port 11434
-- **Open-WebUI**: Port 8080 (mapped to 3000)
+---
+
+## 🧠 **Available Models**
+
+| Model             | Description                       |
+| ----------------- | --------------------------------- |
+| `deepseek-r1:8b`  | Recommended – 8B parameters       |
+| `deepseek-r1:14b` | Larger model – 14B parameters     |
+| `deepseek-r1:32b` | Very large model – 32B parameters |
+| `llama3.2:3b`     | Lightweight version               |
+| `llama3.2:8b`     | Balanced medium-size model        |
+| `qwen2.5:7b`      | Alternative model option          |
+
+---
+
+## 🔌 **Key Ports**
+
+| Service                     | Port        | Description               |
+| --------------------------- | ----------- | ------------------------- |
+| **Ollama API**              | 11434       | Model inference endpoint  |
+| **Open-WebUI**              | 8080        | Web interface port        |
+| **Docker internal mapping** | 3000 → 8080 | Container to host mapping |
+
+---
+
+Would you like me to **export this as a `.md` file** (for GitHub or documentation) or a **.docx file** (for interviews and PDF conversion)?
