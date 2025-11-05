@@ -266,24 +266,7 @@ The models were versioned in the **SageMaker Model Registry** and deployed as **
 This enabled **global researchers** to study **Alzheimer's, Parkinson's, and brain disorders** with unified multimodal insights.
 
 ### Architecture Flow
-```mermaid
-flowchart TD
-    A[Brain Data Sources\n(Genomics, MRI, Research Papers)] --> B[S3 Storage]
-    B --> C[SageMaker Processing\n(Clean + Features)]
-    C --> D1[scVI Model\n(Single-cell Genomics)]
-    C --> D2[GNN Model\n(Cell Graphs)]
-    C --> D3[BioBERT\n(Research NLP)]
-    C --> D4[ResNet\n(MRI Analysis)]
-    D1 --> E[SageMaker Model Registry]
-    D2 --> E
-    D3 --> E
-    D4 --> E
-    E --> F[SageMaker Endpoints]
-    F --> G[Amazon QuickSight Dashboards]
-    F --> H[Amazon Q Chatbot]
-    G --> I[Neuroscientists / Researchers]
-    H --> I
-```
+
 ![DeepSeek Architecture](./deepseek_mermaid_20251105_c7c463.png)
 
 ### How SageMaker Features Were Used
