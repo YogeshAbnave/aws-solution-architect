@@ -284,6 +284,7 @@ flowchart TD
     G --> I[Neuroscientists / Researchers]
     H --> I
 ```
+![DeepSeek Architecture](./deepseek_mermaid_20251105_c7c463.png)
 
 ### How SageMaker Features Were Used
 1. **SageMaker Processing Jobs**
